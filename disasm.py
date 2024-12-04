@@ -248,10 +248,9 @@ NMEMONIC = {
     0xF3: lambda *_: "DI",
     0xF9: lambda *_: "LD SP,HL",
     0xFB: lambda *_: "EI",
-
-    0xdd: opecode_dd_fd,
-    0xed: opecode_ed,
-    0xfd: opecode_dd_fd,
+    0xDD: opecode_dd_fd,
+    0xED: opecode_ed,
+    0xFD: opecode_dd_fd,
 }
 
 
@@ -320,7 +319,7 @@ NMEMONIC_ED = {
     0x40: in_r,
     0x41: out_r,
     0x42: sbc_hl,
-    0x4a: adc_hl,
+    0x4A: adc_hl,
     0x43: ld_mem_rr,
     0x53: ld_mem_rr,
     0x73: ld_mem_rr,
@@ -456,7 +455,7 @@ NMEMONIC_DD_FD = {
     0xE3: lambda op, *_: "EX (SP),IX" if op == 0xDD else "EX (SP),IY",
     0xE9: lambda op, *_: "JP (IX)" if op == 0xDD else "JP (IY)",
     0xF9: lambda op, *_: "LD SP,IX" if op == 0xDD else "LD SP,IY",
-    0xcb: bit_shift,
+    0xCB: bit_shift,
 }
 
 
@@ -494,8 +493,8 @@ def init_dis():
 
     # call cc
     for n in range(1, len(CC)):
-        NMEMONIC[0xC4 + n * 8] = NMEMONIC[0xC4] # CALL CC
-        NMEMONIC[0xC2 + n * 8] = NMEMONIC[0xC2] # JP CC,nnnn
+        NMEMONIC[0xC4 + n * 8] = NMEMONIC[0xC4]  # CALL CC
+        NMEMONIC[0xC2 + n * 8] = NMEMONIC[0xC2]  # JP CC,nnnn
 
     # RET cc
     for n in range(1, len(CC)):
@@ -527,7 +526,7 @@ def init_dis():
 
     for n in range(1, len(REG16_SP)):
         NMEMONIC_ED[0x42 + n * 0x10] = NMEMONIC_ED[0x42]
-        NMEMONIC_ED[0x4a + n * 0x10] = NMEMONIC_ED[0x4a]
+        NMEMONIC_ED[0x4A + n * 0x10] = NMEMONIC_ED[0x4A]
 
     # DD, FD
     for n in range(1, 4):
@@ -537,7 +536,6 @@ def init_dis():
         NMEMONIC_DD_FD[0x46 + n * 8] = NMEMONIC_DD_FD[0x46]  # LD r,(ixy+n)
         NMEMONIC_DD_FD[0x70 + n] = NMEMONIC_DD_FD[0x70]  # LD r,(ixy+n)
 
-
     # for n in range(len(ROTATE_SHIFT_R)):
     #     NMEMONIC_DD_FD[0x06 + n * 8] = bit_shift  # shift rotate
 
@@ -546,21 +544,34 @@ def init_dis():
     #         NMEMONIC_DD_FD[0x46 + n * 8] = bit_shift # bit
 
 
+def format_line(addr, text, code):
+    items = text.split(" ", maxsplit=2)
+    return f"{items[0]:6}{' '.join(items[1:]):34};[{addr:04x}] " + " ".join(
+        [f"{c:02x}" for c in code]
+    )
+
+
 init_dis()
+
 
 def disasm(mem):
     op = mem.next_byte()
+    addr = mem.ofs
+    lines = {}
     while op is not None:
         # print(f"[{mem.ofs - 1:04x}] ${op:02x} ", end="")
         func = NMEMONIC.get(op)
         if func is None:
             raise Exception(f"invalid op ${op:02x}")
-        print(func(op, mem))
+        text = func(op, mem)
+        lines[addr] = format_line(addr, text, mem[addr : mem.ofs])
+        addr = mem.ofs
         op = mem.next_byte()
+    return lines
+
 
 if __name__ == "__main__":
     mem = Memory(open("temp/zilog.bin", "rb").read())
-    disasm(mem)
-
-
-    
+    lines = disasm(mem)
+    for text in lines.values():
+        print(text)
