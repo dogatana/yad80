@@ -17,40 +17,40 @@ def ld_reg8(op, _):
     return f"LD {REG8[r1]}", {REG8[r2]}
 
 
-def ld_reg8_n(op, cpu):
+def ld_reg8_n(op, mem):
     r = (op >> 3) & 7
-    n = cpu.fetch()
+    n = mem.next_byte()
     return f"LD {REG8[r]},${n:02X}"
 
 
-def ld_reg16_nn(op, cpu):
+def ld_reg16_nn(op, mem):
     rr = (op >> 3) & 7
-    n1 = cpu.fetch()
-    n2 = cpu.fetch()
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"LD {REG16_SP[rr]},${n1:02X}{n2:02X}"
 
 
-def ld_mem_HL(_, cpu):
-    n1 = cpu.fetch()
-    n2 = cpu.fetch()
+def ld_mem_HL(_, mem):
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"LD (${n1:02X}{n2:02X}),HL"
 
 
-def ld_HL_mem(_, cpu):
-    n1 = cpu.fetch()
-    n2 = cpu.fetch()
+def ld_HL_mem(_, mem):
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"LD HL,(${n1:02X}{n2:02X})"
 
 
-def ld_mem_A(_, cpu):
-    n1 = cpu.fetch()
-    n2 = cpu.fetch()
+def ld_mem_A(_, mem):
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"LD (${n1:02X}{n2:02X}),A"
 
 
-def ld_A_mem(_, cpu):
-    n1 = cpu.fetch()
-    n2 = cpu.fetch()
+def ld_A_mem(_, mem):
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"LD A,(${n1:02X}{n2:02X})"
 
 
@@ -60,9 +60,9 @@ def arithmetic_reg8(op, _):
     return f"{ARITHMETIC[p]} {REG8[r]}"
 
 
-def arithmetic_reg8_n(op, cpu):
+def arithmetic_reg8_n(op, mem):
     p = (op >> 3) & 7
-    n = cpu.next_byte()
+    n = mem.next_byte()
     return f"{ARITHMETIC[p]} ${n:02X}"
 
 
@@ -96,22 +96,22 @@ def rotate_shift(op, _):
     return ROTATE_SHIFT[p]
 
 
-def djnz(_, cpu):
-    n = cpu.fetch()
-    addr = cpu.pc + uint8_to_int8(n)
+def djnz(_, mem):
+    n = mem.next_byte()
+    addr = mem.pc + uint8_to_int8(n)
     return f"DJNZ ${addr:04X}"
 
 
-def jr(_, cpu):
-    n = cpu.fetch()
-    addr = cpu.pc + uint8_to_int8(n)
+def jr(_, mem):
+    n = mem.next_byte()
+    addr = mem.pc + uint8_to_int8(n)
     return f"JR ${addr:04X}"
 
 
-def jr_cc(op, cpu):
+def jr_cc(op, mem):
     cc = (op >> 3) & 7 - 4
-    n = cpu.fetch()
-    addr = cpu.pc + uint8_to_int8(n)
+    n = mem.next_byte()
+    addr = mem.pc + uint8_to_int8(n)
     return f"JR ${CC[cc]},${addr:04X}"
 
 
@@ -130,29 +130,29 @@ def push_reg16(op, _):
     return f"PUSH {REG16_AF[rr]}"
 
 
-def jp_cc(op, cpu):
+def jp_cc(op, mem):
     cc = (op >> 3) & 7
-    n1 = cpu.next_byte()
-    n2 = cpu.next_byte()
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"JP {CC[cc]},${n1:02X}{n2:02X}"
 
 
-def jp(_, cpu):
-    n1 = cpu.next_byte()
-    n2 = cpu.next_byte()
+def jp(_, mem):
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"JP ${n1:02X}{n2:02X}"
 
 
-def call_cc(op, cpu):
+def call_cc(op, mem):
     cc = (op >> 3) & 7
-    n1 = cpu.next_byte()
-    n2 = cpu.next_byte()
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"CALL {CC[cc]},${n1:02X}{n2:02X}"
 
 
-def call(_, cpu):
-    n1 = cpu.next_byte()
-    n2 = cpu.next_byte()
+def call(_, mem):
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"CALL ${n1:02X}{n2:02X}"
 
 
@@ -161,13 +161,13 @@ def rst(op, _):
     return f"RST ${p * 8:02X}"
 
 
-def out(_, cpu):
-    n = cpu.next_byte()
+def out(_, mem):
+    n = mem.next_byte()
     return f"OUT (${n:02X},A)"
 
 
-def in_(_, cpu):
-    n = cpu.next_byte()
+def in_(_, mem):
+    n = mem.next_byte()
     return f"IN A,(${n:02X})"
 
 
@@ -178,19 +178,19 @@ def uint8_to_int8(value):
         return value - 256
 
 
-def opecode_cb(_, cpu):
-    op = cpu.next_byte()
-    return NMEMONIC_CB[op](op, cpu)
+def opecode_cb(_, mem):
+    op = mem.next_byte()
+    return NMEMONIC_CB[op](op, mem)
 
 
-def opecode_ed(_, cpu):
-    op = cpu.next_byte()
-    return NMEMONIC_ED[op](op, cpu)
+def opecode_ed(_, mem):
+    op = mem.next_byte()
+    return NMEMONIC_ED[op](op, mem)
 
 
-def opecode_dd_ed(op1, cpu):
-    op2 = cpu.next_byte()
-    return NMEMONIC_ED[op2](op1, op2, cpu)
+def opecode_dd_ed(op1, mem):
+    op2 = mem.next_byte()
+    return NMEMONIC_ED[op2](op1, op2, mem)
 
 
 NMEMONIC = {
@@ -289,17 +289,17 @@ def adc_hl(op, _):
     return f"ADC HL,{REG16_SP[rr]}"
 
 
-def ld_mem_rr(op, cpu):
+def ld_mem_rr(op, mem):
     rr = (op >> 4) & 3
-    n1 = cpu.next_byte()
-    n2 = cpu.next_byte()
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"LD (${n1:02X}{n2:02X},{REG16_SP[rr]})"
 
 
-def ld_rr_mem(op, cpu):
+def ld_rr_mem(op, mem):
     rr = (op >> 4) & 3
-    n1 = cpu.next_byte()
-    n2 = cpu.next_byte()
+    n1 = mem.next_byte()
+    n2 = mem.next_byte()
     return f"LD {REG16_SP[rr]},(${n1:02X}{n2:02X})"
 
 
