@@ -1,3 +1,5 @@
+from memory import Memory
+
 REG8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"]
 REG16_SP = ["BC", "DE", "HL", "SP"]
 REG16_AF = ["BC", "DE", "HL", "AF"]
@@ -14,7 +16,7 @@ CC = ["NZ", "Z", "NC", "C", "PO", "PE", "P", "M"]
 def ld_reg8(op, _):
     r1 = (op >> 3) & 7
     r2 = op & 7
-    return f"LD {REG8[r1]}", {REG8[r2]}
+    return f"LD {REG8[r1]},{REG8[r2]}"
 
 
 def ld_reg8_n(op, mem):
@@ -24,34 +26,34 @@ def ld_reg8_n(op, mem):
 
 
 def ld_reg16_nn(op, mem):
-    rr = (op >> 3) & 7
+    rr = (op >> 4) & 3
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"LD {REG16_SP[rr]},${n1:02X}{n2:02X}"
+    return f"LD {REG16_SP[rr]},${n2:02X}{n1:02X}"
 
 
 def ld_mem_HL(_, mem):
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"LD (${n1:02X}{n2:02X}),HL"
+    return f"LD (${n2:02X}{n1:02X}),HL"
 
 
 def ld_HL_mem(_, mem):
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"LD HL,(${n1:02X}{n2:02X})"
+    return f"LD HL,(${n2:02X}{n1:02X})"
 
 
 def ld_mem_A(_, mem):
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"LD (${n1:02X}{n2:02X}),A"
+    return f"LD (${n2:02X}{n1:02X}),A"
 
 
 def ld_A_mem(_, mem):
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"LD A,(${n1:02X}{n2:02X})"
+    return f"LD A,(${n2:02X}{n1:02X})"
 
 
 def arithmetic_reg8(op, _):
@@ -67,17 +69,17 @@ def arithmetic_reg8_n(op, mem):
 
 
 def add_hl(op, _):
-    rr = (op >> 3) & 7
+    rr = (op >> 4) & 3
     return f"ADD HL,{REG16_SP[rr]}"
 
 
 def inc_reg16(op, _):
-    rr = (op >> 3) & 7
+    rr = (op >> 4) & 3
     return f"INC {REG16_SP[rr]}"
 
 
 def dec_reg16(op, _):
-    rr = (op >> 3) & 7
+    rr = (op >> 4) & 3
     return f"DEC {REG16_SP[rr]}"
 
 
@@ -98,26 +100,26 @@ def rotate_shift(op, _):
 
 def djnz(_, mem):
     n = mem.next_byte()
-    addr = mem.pc + uint8_to_int8(n)
+    addr = mem.ofs + uint8_to_int8(n)
     return f"DJNZ ${addr:04X}"
 
 
 def jr(_, mem):
     n = mem.next_byte()
-    addr = mem.pc + uint8_to_int8(n)
+    addr = mem.ofs + uint8_to_int8(n)
     return f"JR ${addr:04X}"
 
 
 def jr_cc(op, mem):
     cc = (op >> 3) & 7 - 4
     n = mem.next_byte()
-    addr = mem.pc + uint8_to_int8(n)
-    return f"JR ${CC[cc]},${addr:04X}"
+    addr = mem.ofs + uint8_to_int8(n)
+    return f"JR {CC[cc]},${addr:04X}"
 
 
 def ret_cc(op, _):
     cc = (op >> 3) & 7
-    return f"RET ${CC[cc]}"
+    return f"RET {CC[cc]}"
 
 
 def pop_reg16(op, _):
@@ -134,26 +136,26 @@ def jp_cc(op, mem):
     cc = (op >> 3) & 7
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"JP {CC[cc]},${n1:02X}{n2:02X}"
+    return f"JP {CC[cc]},${n2:02X}{n1:02X}"
 
 
 def jp(_, mem):
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"JP ${n1:02X}{n2:02X}"
+    return f"JP ${n2:02X}{n1:02X}"
 
 
 def call_cc(op, mem):
     cc = (op >> 3) & 7
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"CALL {CC[cc]},${n1:02X}{n2:02X}"
+    return f"CALL {CC[cc]},${n2:02X}{n1:02X}"
 
 
 def call(_, mem):
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"CALL ${n1:02X}{n2:02X}"
+    return f"CALL ${n2:02X}{n1:02X}"
 
 
 def rst(op, _):
@@ -163,7 +165,7 @@ def rst(op, _):
 
 def out(_, mem):
     n = mem.next_byte()
-    return f"OUT (${n:02X},A)"
+    return f"OUT (${n:02X}),A"
 
 
 def in_(_, mem):
@@ -185,39 +187,46 @@ def opecode_cb(_, mem):
 
 def opecode_ed(_, mem):
     op = mem.next_byte()
-    return NMEMONIC_ED[op](op, mem)
+    func = NMEMONIC_ED.get(op)
+    if func is None:
+        raise Exception(f"invalid op ED {op:02X}")
+    return func(op, mem)
 
 
-def opecode_dd_ed(op1, mem):
+def opecode_dd_fd(op1, mem):
     op2 = mem.next_byte()
-    return NMEMONIC_ED[op2](op1, op2, mem)
+    # print(f"{op2:02x} ", end="")
+    func = NMEMONIC_DD_FD.get(op2)
+    if func is None:
+        raise Exception(f"invalid op {op1:02X} {op2:02X}")
+    return func(op1, op2, mem)
 
 
 NMEMONIC = {
-    0x00: lambda _: "NOP",
+    0x00: lambda *_: "NOP",
     0x01: ld_reg16_nn,
-    0x02: lambda _: "LD (BC),A",
+    0x02: lambda *_: "LD (BC),A",
     0x03: inc_reg16,
     0x04: inc_reg8,
     0x05: dec_reg8,
     0x06: ld_reg8_n,
     0x07: rotate_shift,
-    0x08: lambda _: "EX AF,AF'",
+    0x08: lambda *_: "EX AF,AF'",
     0x09: add_hl,
-    0x0A: lambda _: "LD A,(BC)",
+    0x0A: lambda *_: "LD A,(BC)",
     0x0B: dec_reg16,
     0x0C: dec_reg8,
     0x10: djnz,
-    0x12: lambda _: "LD (DE),A",
+    0x12: lambda *_: "LD (DE),A",
     0x18: jr,
-    0x1A: lambda _: "LD A,(DE)",
+    0x1A: lambda *_: "LD A,(DE)",
     0x20: jr_cc,
     0x22: ld_mem_HL,
     0x2A: ld_HL_mem,
     0x32: ld_mem_A,
     0x3A: ld_A_mem,
     0x40: ld_reg8,
-    0x76: lambda _: "HALT",
+    0x76: lambda *_: "HALT",
     0x80: arithmetic_reg8,
     0xC0: ret_cc,
     0xC1: pop_reg16,
@@ -227,18 +236,22 @@ NMEMONIC = {
     0xC5: push_reg16,
     0xC6: arithmetic_reg8_n,
     0xC7: rst,
-    0xC9: lambda _: "RET",
+    0xC9: lambda *_: "RET",
     0xCB: opecode_cb,
     0xCD: call,
     0xD3: out,
-    0xD9: lambda _: "EXX",
+    0xD9: lambda *_: "EXX",
     0xDB: in_,
-    0xE3: lambda _: "EX (SP),HL",
-    0xE9: lambda _: "JP (HL)",
-    0xEB: lambda _: "EX DE,HL",
-    0xF3: lambda _: "DI",
-    0xF9: lambda _: "LD SP,HL",
-    0xFB: lambda _: "EI",
+    0xE3: lambda *_: "EX (SP),HL",
+    0xE9: lambda *_: "JP (HL)",
+    0xEB: lambda *_: "EX DE,HL",
+    0xF3: lambda *_: "DI",
+    0xF9: lambda *_: "LD SP,HL",
+    0xFB: lambda *_: "EI",
+
+    0xdd: opecode_dd_fd,
+    0xed: opecode_ed,
+    0xfd: opecode_dd_fd,
 }
 
 
@@ -268,7 +281,7 @@ def in_r(op, _):
     if r == 6:
         return "IN (C)"
     else:
-        return f"IN {REG8[r]}"
+        return f"IN {REG8[r]},(C)"
 
 
 def out_r(op, _):
@@ -293,59 +306,55 @@ def ld_mem_rr(op, mem):
     rr = (op >> 4) & 3
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"LD (${n1:02X}{n2:02X},{REG16_SP[rr]})"
+    return f"LD (${n2:02X}{n1:02X}),{REG16_SP[rr]}"
 
 
 def ld_rr_mem(op, mem):
     rr = (op >> 4) & 3
     n1 = mem.next_byte()
     n2 = mem.next_byte()
-    return f"LD {REG16_SP[rr]},(${n1:02X}{n2:02X})"
+    return f"LD {REG16_SP[rr]},(${n2:02X}{n1:02X})"
 
 
 NMEMONIC_ED = {
     0x40: in_r,
     0x41: out_r,
     0x42: sbc_hl,
-    0x52: sbc_hl,
-    0x62: sbc_hl,
-    0x4A: adc_hl,
-    0x5A: adc_hl,
-    0x6A: adc_hl,
+    0x4a: adc_hl,
     0x43: ld_mem_rr,
     0x53: ld_mem_rr,
     0x73: ld_mem_rr,
     0x4B: ld_rr_mem,
     0x5B: ld_rr_mem,
     0x7B: ld_rr_mem,
-    0x47: lambda _: "LD I,A",
-    0x57: lambda _: "LD A,I",
-    0x4F: lambda _: "LD R,A",
-    0x5F: lambda _: "LD A,R",
-    0xA0: lambda _: "LDI",
-    0xA8: lambda _: "LDD",
-    0xB0: lambda _: "LDIR",
-    0xB8: lambda _: "LDDR",
-    0xA1: lambda _: "CPI",
-    0xA9: lambda _: "CPD",
-    0xB1: lambda _: "CPIR",
-    0xB9: lambda _: "CPDR",
-    0xA2: lambda _: "INI",
-    0xAA: lambda _: "IND",
-    0xB2: lambda _: "INIR",
-    0xBA: lambda _: "INDR",
-    0xA3: lambda _: "OUTI",
-    0xAB: lambda _: "OUTD",
-    0xB3: lambda _: "OUTIR",
-    0xBB: lambda _: "OUTDR",
-    0x44: lambda _: "NEG",
-    0x45: lambda _: "RETN",
-    0x4D: lambda _: "RETI",
-    0x46: lambda _: "IM 0",
-    0x56: lambda _: "IM 1",
-    0x5E: lambda _: "IM 2",
-    0x67: lambda _: "RRD",
-    0x6F: lambda _: "RLD",
+    0x47: lambda *_: "LD I,A",
+    0x57: lambda *_: "LD A,I",
+    0x4F: lambda *_: "LD R,A",
+    0x5F: lambda *_: "LD A,R",
+    0xA0: lambda *_: "LDI",
+    0xA8: lambda *_: "LDD",
+    0xB0: lambda *_: "LDIR",
+    0xB8: lambda *_: "LDDR",
+    0xA1: lambda *_: "CPI",
+    0xA9: lambda *_: "CPD",
+    0xB1: lambda *_: "CPIR",
+    0xB9: lambda *_: "CPDR",
+    0xA2: lambda *_: "INI",
+    0xAA: lambda *_: "IND",
+    0xB2: lambda *_: "INIR",
+    0xBA: lambda *_: "INDR",
+    0xA3: lambda *_: "OUTI",
+    0xAB: lambda *_: "OUTD",
+    0xB3: lambda *_: "OTIR",
+    0xBB: lambda *_: "OTDR",
+    0x44: lambda *_: "NEG",
+    0x45: lambda *_: "RETN",
+    0x4D: lambda *_: "RETI",
+    0x46: lambda *_: "IM 0",
+    0x56: lambda *_: "IM 1",
+    0x5E: lambda *_: "IM 2",
+    0x67: lambda *_: "RRD",
+    0x6F: lambda *_: "RLD",
 }
 
 
@@ -362,17 +371,15 @@ def ld_reg8_indexed(op1, op2, mem):
     sign = "-" if ofs < 0 else "+"
     r = (op2 >> 3) & 7
     if r == 6:
-        raise Exception(f"undefined {op1:02X} {op2:02x}")
-    return f"LD {REG8[r]},({ixy}{sign}${abs(ofs):02x})"
+        raise Exception(f"undefined {op1:02X} {op2:02X}")
+    return f"LD {REG8[r]},({ixy}{sign}${abs(ofs):02X})"
 
 
 def ld_indexed_reg8(op1, op2, mem):
     ixy = "IX" if op1 == 0xDD else "IY"
     ofs = uint8_to_int8(mem.next_byte())
     sign = "-" if ofs < 0 else "+"
-    r = (op2 >> 3) & 7
-    if r == 6:
-        raise Exception(f"undefined {op1:02X} {op2:02x}")
+    r = op2 & 7
     return f"LD ({ixy}{sign}${abs(ofs):02x}),{REG8[r]}"
 
 
@@ -402,7 +409,7 @@ def ld_indexed_n(op1, _, mem):
     ofs = uint8_to_int8(mem.next_byte())
     sign = "-" if ofs < 0 else "+"
     n = mem.next_byte()
-    return f"LD ({ixy}{sign}${abs(ofs)}),${n:02X}"
+    return f"LD ({ixy}{sign}${abs(ofs):02X}),${n:02X}"
 
 
 def inc_dec_indexed(op1, op2, mem):
@@ -410,10 +417,10 @@ def inc_dec_indexed(op1, op2, mem):
     incdec = "INC" if op2 == 0x34 else "DEC"
     ofs = uint8_to_int8(mem.next_byte())
     sign = "-" if ofs < 0 else "+"
-    return f"{incdec} ({ixy}{sign}${abs(ofs)})"
+    return f"{incdec} ({ixy}{sign}${abs(ofs):02X})"
 
 
-def bit_shift(op1, op2, mem):
+def bit_shift(op1, _, mem):
     ixy = "IX" if op1 == 0xDD else "IY"
     n = mem.next_byte()
     ofs = uint8_to_int8(n)
@@ -422,16 +429,14 @@ def bit_shift(op1, op2, mem):
     r = op2 & 7
     if r != 6:
         raise Exception(f"undefined {op1:02X} CB {n:02X} {op2:02x}")
-    bit_shift_op = (op2 >> 6) & 7
     mask = (op2 >> 6) & 3
     if mask == 0:
-        n = (op2 >> 3) & 7
-        return f"{BIT_OP[bit_shift_op]} {n},({ixy}{sign}${abs(ofs):02X})"
-    elif mask == 1:
-        n = (op2 >> 3) & 7
-        return f"{ROTATE_SHIFT_R[bit_shift_op]} ({ixy}{sign}${abs(ofs):02X})"
+        shift_op = (op2 >> 3) & 7
+        return f"{ROTATE_SHIFT_R[shift_op]} ({ixy}{sign}${abs(ofs):02X})"
     else:
-        raise Exception(f"undefined {op1:02X} CB {n:02X} {op2:02x}")
+        bit_op = (op2 >> 6) & 7
+        n = (op2 >> 3) & 7
+        return f"{BIT_OP[bit_op]} {n},({ixy}{sign}${abs(ofs):02X})"
 
 
 NMEMONIC_DD_FD = {
@@ -442,16 +447,16 @@ NMEMONIC_DD_FD = {
     0x34: inc_dec_indexed,
     0x35: inc_dec_indexed,
     0x36: ld_indexed_n,
-    0x23: lambda op: "INC IX" if op == 0xDD else "INC IY",
-    0x2B: lambda op: "DEC IX" if op == 0xDD else "DEC IY",
+    0x23: lambda op, *_: "INC IX" if op == 0xDD else "INC IY",
+    0x2B: lambda op, *_: "DEC IX" if op == 0xDD else "DEC IY",
     0x46: ld_reg8_indexed,
     0x70: ld_indexed_reg8,
-    0xE1: lambda op: "POP IX" if op == 0xDD else "POP IY",
-    0xE5: lambda op: "PUSH IX" if op == 0xDD else "PUSH IY",
-    0xE3: lambda op: "EX (SP),IX" if op == 0xDD else "EX (SP),IY",
-    0xE9: lambda op: "JP (IX)" if op == 0xDD else "JP (IY)",
-    0xF9: lambda op: "LD, SP,IX" if op == 0xDD else "LD SP,IY",
-    0xCB: bit_shift,
+    0xE1: lambda op, *_: "POP IX" if op == 0xDD else "POP IY",
+    0xE5: lambda op, *_: "PUSH IX" if op == 0xDD else "PUSH IY",
+    0xE3: lambda op, *_: "EX (SP),IX" if op == 0xDD else "EX (SP),IY",
+    0xE9: lambda op, *_: "JP (IX)" if op == 0xDD else "JP (IY)",
+    0xF9: lambda op, *_: "LD SP,IX" if op == 0xDD else "LD SP,IY",
+    0xcb: bit_shift,
 }
 
 
@@ -483,10 +488,14 @@ def init_dis():
     for n in range(1, len(ROTATE_SHIFT)):
         NMEMONIC[0x07 + n * 8] = NMEMONIC[0x07]
 
-    # JR cc, call cc
-    for n in range(1, len(CC)):
+    # JR cc
+    for n in range(1, 4):
         NMEMONIC[0x20 + n * 8] = NMEMONIC[0x20]
-        NMEMONIC[0xC4 + n * 8] = NMEMONIC[0xC4]
+
+    # call cc
+    for n in range(1, len(CC)):
+        NMEMONIC[0xC4 + n * 8] = NMEMONIC[0xC4] # CALL CC
+        NMEMONIC[0xC2 + n * 8] = NMEMONIC[0xC2] # JP CC,nnnn
 
     # RET cc
     for n in range(1, len(CC)):
@@ -496,10 +505,6 @@ def init_dis():
     for n in range(1, len(REG16_AF)):
         NMEMONIC[0xC1 + n * 0x10] = NMEMONIC[0xC1]  # PUSH rr
         NMEMONIC[0xC5 + n * 0x10] = NMEMONIC[0xC5]  # PUSH rr
-
-    # JP cc,nn
-    for n in range(1, len(CC)):
-        NMEMONIC[0xC2 + n * 8] = NMEMONIC[0xC2]
 
     # 8 bit arithmetic
     for n in range(1, len(ARITHMETIC)):
@@ -520,23 +525,42 @@ def init_dis():
         NMEMONIC_ED[0x40 + n * 8] = NMEMONIC_ED[0x40]  # IN r,(C)
         NMEMONIC_ED[0x41 + n * 8] = NMEMONIC_ED[0x41]  # OUT (C),r
 
+    for n in range(1, len(REG16_SP)):
+        NMEMONIC_ED[0x42 + n * 0x10] = NMEMONIC_ED[0x42]
+        NMEMONIC_ED[0x4a + n * 0x10] = NMEMONIC_ED[0x4a]
+
     # DD, FD
     for n in range(1, 4):
         NMEMONIC_DD_FD[0x09 + n * 0x10] = NMEMONIC_DD_FD[0x09]  # LD ixy,REG16
 
     for n in range(1, len(REG8)):
         NMEMONIC_DD_FD[0x46 + n * 8] = NMEMONIC_DD_FD[0x46]  # LD r,(ixy+n)
-        NMEMONIC_DD_FD[0x70 + n * 8] = NMEMONIC_DD_FD[0x70]  # LD r,(ixy+n)
+        NMEMONIC_DD_FD[0x70 + n] = NMEMONIC_DD_FD[0x70]  # LD r,(ixy+n)
 
-    for n in range(1, 8):
-        NMEMONIC_DD_FD[0x70 + n * 8] = NMEMONIC_DD_FD[0x70]  # LD r,(ixy+n)
 
-    for n in range(1, len(ROTATE_SHIFT_R)):
-        NMEMONIC_DD_FD[0x06 + n * 8] = NMEMONIC_DD_FD[0x06]  # RLC (ixy+n)
+    # for n in range(len(ROTATE_SHIFT_R)):
+    #     NMEMONIC_DD_FD[0x06 + n * 8] = bit_shift  # shift rotate
 
-    for op in BIT_OP:
-        for n in range(8):
-            NMEMONIC_DD_FD[0x46 + n * 8] = bit_shift
+    # for op in BIT_OP:
+    #     for n in range(8):
+    #         NMEMONIC_DD_FD[0x46 + n * 8] = bit_shift # bit
 
 
 init_dis()
+
+def disasm(mem):
+    op = mem.next_byte()
+    while op is not None:
+        # print(f"[{mem.ofs - 1:04x}] ${op:02x} ", end="")
+        func = NMEMONIC.get(op)
+        if func is None:
+            raise Exception(f"invalid op ${op:02x}")
+        print(func(op, mem))
+        op = mem.next_byte()
+
+if __name__ == "__main__":
+    mem = Memory(open("temp/zilog.bin", "rb").read())
+    disasm(mem)
+
+
+    
