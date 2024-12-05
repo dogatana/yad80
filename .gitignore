@@ -15,5 +15,6 @@ venv/
 *.asm
 *.bin
 *.dis
+*.rom
 
 temp/
