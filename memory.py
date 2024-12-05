@@ -1,3 +1,5 @@
+from exceptions import AddressError
+
 class Memory:
     def __init__(self, block, ofs=0):
         self.block = block
@@ -14,4 +16,7 @@ class Memory:
         self.ofs = 0
 
     def __getitem__(self, index):
-        return self.block[index]
+        try:
+            return self.block[index]
+        except IndexError:
+            raise AddressError(f"{index:04x} out of range")

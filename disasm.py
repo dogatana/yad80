@@ -1,4 +1,6 @@
 from memory import Memory
+import re
+from exceptions import InstructionError
 
 REG8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"]
 REG16_SP = ["BC", "DE", "HL", "SP"]
@@ -189,7 +191,7 @@ def opecode_ed(_, mem):
     op = mem.next_byte()
     func = NMEMONIC_ED.get(op)
     if func is None:
-        raise Exception(f"invalid op ED {op:02X}")
+        raise InstructionError(f"invalid instruction ed {op:02x}")
     return func(op, mem)
 
 
@@ -198,7 +200,7 @@ def opecode_dd_fd(op1, mem):
     # print(f"{op2:02x} ", end="")
     func = NMEMONIC_DD_FD.get(op2)
     if func is None:
-        raise Exception(f"invalid op {op1:02X} {op2:02X}")
+        raise InstructionError(f"invalid instruction {op1:02x} {op2:02x}")
     return func(op1, op2, mem)
 
 
@@ -258,7 +260,7 @@ def rotate_shift_r(op, _):
     p = (op >> 3) & 7
     r = op & 7
     if ROTATE_SHIFT_R[p] is None:
-        raise Exception(f"invalid code CB {op:02X}")
+        raise InstructionError(f"invalid instruction cb {op:02x}")
     return f"{ROTATE_SHIFT_R[p]} {REG8[r]}"
 
 
@@ -370,7 +372,7 @@ def ld_reg8_indexed(op1, op2, mem):
     sign = "-" if ofs < 0 else "+"
     r = (op2 >> 3) & 7
     if r == 6:
-        raise Exception(f"undefined {op1:02X} {op2:02X}")
+        raise InstructionError(f"invalid instruction {op1:02x} {op2:02x}")
     return f"LD {REG8[r]},({ixy}{sign}${abs(ofs):02X})"
 
 
@@ -427,7 +429,7 @@ def bit_shift(op1, _, mem):
     op2 = mem.next_byte()
     r = op2 & 7
     if r != 6:
-        raise Exception(f"undefined {op1:02X} CB {n:02X} {op2:02x}")
+        raise InstructionError(f"invalid instruction {op1:02x} cb {n:02x} {op2:02x}")
     mask = (op2 >> 6) & 3
     if mask == 0:
         shift_op = (op2 >> 3) & 7
@@ -559,19 +561,40 @@ def disasm(mem):
     addr = mem.ofs
     lines = {}
     while op is not None:
-        # print(f"[{mem.ofs - 1:04x}] ${op:02x} ", end="")
         func = NMEMONIC.get(op)
-        if func is None:
-            raise Exception(f"invalid op ${op:02x}")
-        text = func(op, mem)
+        try:
+            text = func(op, mem)
+            line = format_line(addr, text, mem[addr : mem.ofs])
+            print(line)
+            lines[addr] = line
+        except Exception as e:
+            print(e, f"at {addr:04x}")
+            exit()
+
         lines[addr] = format_line(addr, text, mem[addr : mem.ofs])
         addr = mem.ofs
         op = mem.next_byte()
     return lines
 
+def get_branchs(lines):
+    branches = {}
+    for addr, text in lines.items():
+        m = re.search(r"(?:JP|CALL|JR).*?\$([0-9A-F]{4})", text, flags=re.IGNORECASE)
+        if m is None:
+            continue
+        branches[addr] = int(m.group(1), base=16)
+    return branches
 
 if __name__ == "__main__":
-    mem = Memory(open("temp/zilog.bin", "rb").read())
+    import sys
+    if len(sys.argv) != 2:
+        exit()
+    mem = Memory(open(sys.argv[1], "rb").read())
     lines = disasm(mem)
     for text in lines.values():
         print(text)
+
+    exit()
+    branches = get_branchs(lines)
+    for addr, branch in branches.items():
+        print(f"{addr:04x}->{branch:04x}", lines[addr])
