@@ -1,5 +1,6 @@
 from exceptions import AddressError
 
+
 class Memory:
     def __init__(self, block, ofs=0):
         self.block = block

@@ -556,6 +556,20 @@ def format_line(addr, text, code):
 init_dis()
 
 
+def disasm_one(mem):
+    addr = mem.ofs
+    op = mem.next_byte()
+    if op is None:
+        return -1, ""
+    try:
+        func = NMEMONIC.get(op)
+        text = func(op, mem)
+        line = format_line(addr, text, mem[addr : mem.ofs])
+        return addr, line
+    except InstructionError as e:
+        raise InstructionError(f"{e} at {addr:04x}")
+
+
 def disasm(mem):
     op = mem.next_byte()
     addr = mem.ofs
@@ -576,6 +590,7 @@ def disasm(mem):
         op = mem.next_byte()
     return lines
 
+
 def get_branchs(lines):
     branches = {}
     for addr, text in lines.items():
@@ -585,8 +600,10 @@ def get_branchs(lines):
         branches[addr] = int(m.group(1), base=16)
     return branches
 
+
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) != 2:
         exit()
     mem = Memory(open(sys.argv[1], "rb").read())
