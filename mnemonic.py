@@ -1,7 +1,7 @@
 from exceptions import InstructionError
 from mnemonic_cb import MNEMONIC_CB
 from mnemonic_ed import MNEMONIC_ED
-from mnemonic_dd_fd import MNEMONIC_DD_FD
+from mnemonic_dd_fd import MNEMONIC_DD_FD, uint8_to_int8
 
 REG8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"]
 REG16_SP = ["BC", "DE", "HL", "SP"]
@@ -176,13 +176,6 @@ def out(_, mem):
 def in_(_, mem):
     n = mem.next_byte()
     return f"IN A,(${n:02X})"
-
-
-def uint8_to_int8(value):
-    if value <= 127:
-        return value
-    else:
-        return value - 256
 
 
 def opecode_cb(_, mem):
