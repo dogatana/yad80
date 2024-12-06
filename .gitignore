@@ -16,5 +16,6 @@ venv/
 *.bin
 *.dis
 *.rom
+*.o
 
 temp/
