@@ -15,9 +15,11 @@ BIT_OP = [None, "BIT", "RES", "SET"]
 CC = ["NZ", "Z", "NC", "C", "PO", "PE", "P", "M"]
 
 
-def ld_reg8(op, _):
+def ld_reg8_reg8(op, _):
     r1 = (op >> 3) & 7
     r2 = op & 7
+    if r1 == r2 == 6: # just in case
+        return "HALT"
     return f"LD {REG8[r1]},{REG8[r2]}"
 
 
@@ -184,12 +186,12 @@ def uint8_to_int8(value):
 
 def opecode_cb(_, mem):
     op = mem.next_byte()
-    return NMEMONIC_CB[op](op, mem)
+    return MNEMONIC_CB[op](op, mem)
 
 
 def opecode_ed(_, mem):
     op = mem.next_byte()
-    func = NMEMONIC_ED.get(op)
+    func = MNEMONIC_ED.get(op)
     if func is None:
         raise InstructionError(f"invalid instruction ed {op:02x}")
     return func(op, mem)
@@ -198,13 +200,13 @@ def opecode_ed(_, mem):
 def opecode_dd_fd(op1, mem):
     op2 = mem.next_byte()
     # print(f"{op2:02x} ", end="")
-    func = NMEMONIC_DD_FD.get(op2)
+    func = MNEMONIC_DD_FD.get(op2)
     if func is None:
         raise InstructionError(f"invalid instruction {op1:02x} {op2:02x}")
     return func(op1, op2, mem)
 
 
-NMEMONIC = {
+MNEMONIC = {
     0x00: lambda *_: "NOP",
     0x01: ld_reg16_nn,
     0x02: lambda *_: "LD (BC),A",
@@ -227,7 +229,7 @@ NMEMONIC = {
     0x2A: ld_HL_mem,
     0x32: ld_mem_A,
     0x3A: ld_A_mem,
-    0x40: ld_reg8,
+    0x40: ld_reg8_reg8,
     0x76: lambda *_: "HALT",
     0x80: arithmetic_reg8,
     0xC0: ret_cc,
@@ -271,7 +273,7 @@ def bit_operation(op, _):
     return f"{BIT_OP[bit_op]} {n},{REG8[r]}"
 
 
-NMEMONIC_CB = {
+MNEMONIC_CB = {
     0x00: rotate_shift_r,
     0x40: bit_operation,
 }
@@ -317,15 +319,17 @@ def ld_rr_mem(op, mem):
     return f"LD {REG16_SP[rr]},(${n2:02X}{n1:02X})"
 
 
-NMEMONIC_ED = {
+MNEMONIC_ED = {
     0x40: in_r,
     0x41: out_r,
     0x42: sbc_hl,
     0x4A: adc_hl,
     0x43: ld_mem_rr,
     0x53: ld_mem_rr,
+    0x63: ld_mem_rr,
     0x73: ld_mem_rr,
     0x4B: ld_rr_mem,
+    0x6B: ld_rr_mem,
     0x5B: ld_rr_mem,
     0x7B: ld_rr_mem,
     0x47: lambda *_: "LD I,A",
@@ -439,8 +443,17 @@ def bit_shift(op1, _, mem):
         n = (op2 >> 3) & 7
         return f"{BIT_OP[bit_op]} {n},({ixy}{sign}${abs(ofs):02X})"
 
+def arithmetic_indexed(op1, op2, mem):
+    ixy = "IX" if op1 == 0xDD else "IY"
+    n = mem.next_byte()
+    ofs = uint8_to_int8(n)
+    sign = "-" if ofs < 0 else "+"
+    p = (op2 >> 3) & 7
+    return f"{ARITHMETIC[p]} ({ixy}{sign}${abs(ofs):02X})"
 
-NMEMONIC_DD_FD = {
+
+
+MNEMONIC_DD_FD = {
     0x09: add_reg16,
     0x21: ld_index_n,
     0x22: ld_mem_index,
@@ -452,6 +465,7 @@ NMEMONIC_DD_FD = {
     0x2B: lambda op, *_: "DEC IX" if op == 0xDD else "DEC IY",
     0x46: ld_reg8_indexed,
     0x70: ld_indexed_reg8,
+    0x86: arithmetic_indexed,
     0xE1: lambda op, *_: "POP IX" if op == 0xDD else "POP IY",
     0xE5: lambda op, *_: "PUSH IX" if op == 0xDD else "PUSH IY",
     0xE3: lambda op, *_: "EX (SP),IX" if op == 0xDD else "EX (SP),IY",
@@ -462,89 +476,72 @@ NMEMONIC_DD_FD = {
 
 
 def init_dis():
-    # LD r,r'
     for op in range(0x41, 0x80):
         if op == 0x76:  # HALT
             continue
-        NMEMONIC[op] = NMEMONIC[0x40]
+        MNEMONIC[op] = MNEMONIC[0x40] # LD r,r'   
 
-    # 8 bit arithmetic
-    for op in range(0x81, 0xC0):
-        NMEMONIC[op] = NMEMONIC[0x80]
+    for op in range(0x81, 0xc0):
+        MNEMONIC[op] = MNEMONIC[0x80] # 8 bit arithmetic
 
-    # INC rr, DEC rr
     for n in range(1, len(REG16_SP)):
-        NMEMONIC[0x01 + n * 0x10] = NMEMONIC[0x01]  # LD rr,nn
-        NMEMONIC[0x03 + n * 0x10] = NMEMONIC[0x03]  # INC rr
-        NMEMONIC[0x09 + n * 0x10] = NMEMONIC[0x09]  # ADD HL,rr
-        NMEMONIC[0x0B + n * 0x10] = NMEMONIC[0x0B]  # DEC rr
+        MNEMONIC[0x01 + n * 0x10] = MNEMONIC[0x01]  # LD rr,nn
+        MNEMONIC[0x03 + n * 0x10] = MNEMONIC[0x03]  # INC rr
+        MNEMONIC[0x09 + n * 0x10] = MNEMONIC[0x09]  # ADD HL,rr
+        MNEMONIC[0x0b + n * 0x10] = MNEMONIC[0x0B]  # DEC rr
 
-    # INC r, DEC r # LD r,n
     for n in range(1, len(REG8)):
-        NMEMONIC[0x04 + n * 8] = NMEMONIC[0x04]  # INC r
-        NMEMONIC[0x05 + n * 8] = NMEMONIC[0x05]  # DEC r
-        NMEMONIC[0x06 + n * 8] = NMEMONIC[0x06]  # LD  r, n
+        MNEMONIC[0x04 + n * 8] = MNEMONIC[0x04]  # INC r
+        MNEMONIC[0x05 + n * 8] = MNEMONIC[0x05]  # DEC r
+        MNEMONIC[0x06 + n * 8] = MNEMONIC[0x06]  # LD r,n
 
-    # Rotate and Shift
     for n in range(1, len(ROTATE_SHIFT)):
-        NMEMONIC[0x07 + n * 8] = NMEMONIC[0x07]
+        MNEMONIC[0x07 + n * 8] = MNEMONIC[0x07]  # rotate and shift
 
-    # JR cc
     for n in range(1, 4):
-        NMEMONIC[0x20 + n * 8] = NMEMONIC[0x20]
+        MNEMONIC[0x20 + n * 8] = MNEMONIC[0x20]  # JR cc
 
-    # call cc
     for n in range(1, len(CC)):
-        NMEMONIC[0xC4 + n * 8] = NMEMONIC[0xC4]  # CALL CC
-        NMEMONIC[0xC2 + n * 8] = NMEMONIC[0xC2]  # JP CC,nnnn
+        MNEMONIC[0xc0 + n * 8] = MNEMONIC[0xc0]  # RET cc
+        MNEMONIC[0xc2 + n * 8] = MNEMONIC[0xc2]  # JP CC,nnnn
+        MNEMONIC[0xc4 + n * 8] = MNEMONIC[0xc4]  # CALL CC
 
-    # RET cc
-    for n in range(1, len(CC)):
-        NMEMONIC[0xC0 + n * 8] = NMEMONIC[0xC0]
-
-    # PUSH rr, POP rr
     for n in range(1, len(REG16_AF)):
-        NMEMONIC[0xC1 + n * 0x10] = NMEMONIC[0xC1]  # PUSH rr
-        NMEMONIC[0xC5 + n * 0x10] = NMEMONIC[0xC5]  # PUSH rr
+        MNEMONIC[0xc1 + n * 0x10] = MNEMONIC[0xc1]  # POP rr
+        MNEMONIC[0xc5 + n * 0x10] = MNEMONIC[0xc5]  # PUSH rr
 
     # 8 bit arithmetic
     for n in range(1, len(ARITHMETIC)):
-        NMEMONIC[0xC6 + n * 8] = NMEMONIC[0xC6]
+        MNEMONIC[0xC6 + n * 8] = MNEMONIC[0xC6]
 
-    # RST
     for n in range(1, 8):
-        NMEMONIC[0xC7 + n * 8] = NMEMONIC[0xC7]
+        MNEMONIC[0xc7 + n * 8] = MNEMONIC[0xc7]  # RST n
 
     # CB
     for n in range(1, 0x40):
-        NMEMONIC_CB[n] = NMEMONIC_CB[0]  # rotate r, shift r
+        MNEMONIC_CB[n] = MNEMONIC_CB[0]  # rotate r, shift r
     for n in range(0x41, 0x100):
-        NMEMONIC_CB[n] = NMEMONIC_CB[0x40]  # bit operation
+        MNEMONIC_CB[n] = MNEMONIC_CB[0x40]  # bit operation
 
     # ED
     for n in range(1, 8):
-        NMEMONIC_ED[0x40 + n * 8] = NMEMONIC_ED[0x40]  # IN r,(C)
-        NMEMONIC_ED[0x41 + n * 8] = NMEMONIC_ED[0x41]  # OUT (C),r
+        MNEMONIC_ED[0x40 + n * 8] = MNEMONIC_ED[0x40]  # IN r,(C)
+        MNEMONIC_ED[0x41 + n * 8] = MNEMONIC_ED[0x41]  # OUT (C),r
 
     for n in range(1, len(REG16_SP)):
-        NMEMONIC_ED[0x42 + n * 0x10] = NMEMONIC_ED[0x42]
-        NMEMONIC_ED[0x4A + n * 0x10] = NMEMONIC_ED[0x4A]
+        MNEMONIC_ED[0x42 + n * 0x10] = MNEMONIC_ED[0x42]
+        MNEMONIC_ED[0x4A + n * 0x10] = MNEMONIC_ED[0x4A]
 
     # DD, FD
     for n in range(1, 4):
-        NMEMONIC_DD_FD[0x09 + n * 0x10] = NMEMONIC_DD_FD[0x09]  # LD ixy,REG16
+        MNEMONIC_DD_FD[0x09 + n * 0x10] = MNEMONIC_DD_FD[0x09]  # LD ixy,REG16
 
     for n in range(1, len(REG8)):
-        NMEMONIC_DD_FD[0x46 + n * 8] = NMEMONIC_DD_FD[0x46]  # LD r,(ixy+n)
-        NMEMONIC_DD_FD[0x70 + n] = NMEMONIC_DD_FD[0x70]  # LD r,(ixy+n)
-
-    # for n in range(len(ROTATE_SHIFT_R)):
-    #     NMEMONIC_DD_FD[0x06 + n * 8] = bit_shift  # shift rotate
-
-    # for op in BIT_OP:
-    #     for n in range(8):
-    #         NMEMONIC_DD_FD[0x46 + n * 8] = bit_shift # bit
-
+        MNEMONIC_DD_FD[0x46 + n * 8] = MNEMONIC_DD_FD[0x46]  # LD r,(ixy+n)
+        MNEMONIC_DD_FD[0x70 + n] = MNEMONIC_DD_FD[0x70]  # LD r,(ixy+n)
+    
+    for n in range(1, len(ARITHMETIC)):
+        MNEMONIC_DD_FD[0x86 + n * 8] = MNEMONIC_DD_FD[0x86]  # arithmetic
 
 def format_line(addr, text, code):
     items = text.split(" ", maxsplit=2)
@@ -562,7 +559,7 @@ def disasm_one(mem):
     if op is None:
         return -1, ""
     try:
-        func = NMEMONIC.get(op)
+        func = MNEMONIC.get(op)
         text = func(op, mem)
         line = format_line(addr, text, mem[addr : mem.ofs])
         return addr, line
@@ -571,11 +568,11 @@ def disasm_one(mem):
 
 
 def disasm(mem):
-    op = mem.next_byte()
     addr = mem.ofs
+    op = mem.next_byte()
     lines = {}
     while op is not None:
-        func = NMEMONIC.get(op)
+        func = MNEMONIC.get(op)
         try:
             text = func(op, mem)
             line = format_line(addr, text, mem[addr : mem.ofs])
@@ -607,11 +604,4 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         exit()
     mem = Memory(open(sys.argv[1], "rb").read())
-    lines = disasm(mem)
-    for text in lines.values():
-        print(text)
-
-    exit()
-    branches = get_branchs(lines)
-    for addr, branch in branches.items():
-        print(f"{addr:04x}->{branch:04x}", lines[addr])
+    disasm(mem)
