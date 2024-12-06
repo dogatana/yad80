@@ -510,9 +510,8 @@ def init_dis():
         MNEMONIC[0xc1 + n * 0x10] = MNEMONIC[0xc1]  # POP rr
         MNEMONIC[0xc5 + n * 0x10] = MNEMONIC[0xc5]  # PUSH rr
 
-    # 8 bit arithmetic
     for n in range(1, len(ARITHMETIC)):
-        MNEMONIC[0xC6 + n * 8] = MNEMONIC[0xC6]
+        MNEMONIC[0xc6 + n * 8] = MNEMONIC[0xc6] # 8 bit arithmetic
 
     for n in range(1, 8):
         MNEMONIC[0xc7 + n * 8] = MNEMONIC[0xc7]  # RST n
@@ -529,8 +528,8 @@ def init_dis():
         MNEMONIC_ED[0x41 + n * 8] = MNEMONIC_ED[0x41]  # OUT (C),r
 
     for n in range(1, len(REG16_SP)):
-        MNEMONIC_ED[0x42 + n * 0x10] = MNEMONIC_ED[0x42]
-        MNEMONIC_ED[0x4A + n * 0x10] = MNEMONIC_ED[0x4A]
+        MNEMONIC_ED[0x42 + n * 0x10] = MNEMONIC_ED[0x42]  # SBC HL,rr
+        MNEMONIC_ED[0x4A + n * 0x10] = MNEMONIC_ED[0x4A]  # ADC HL,rr
 
     # DD, FD
     for n in range(1, 4):
