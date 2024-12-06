@@ -1,7 +1,4 @@
-from mnemonic_defs import (
-    REG8,
-    REG16_SP,
-)
+from mnemonic_defs import REG8, REG16_SP
 
 
 def in_r(op, _):

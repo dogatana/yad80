@@ -1,6 +1,7 @@
-from memory import Memory
 import re
+
 from exceptions import InstructionError
+from memory import Memory
 from mnemonic import MNEMONIC
 
 

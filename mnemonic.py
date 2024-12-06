@@ -1,16 +1,16 @@
 from exceptions import InstructionError
 from mnemonic_cb import MNEMONIC_CB
-from mnemonic_ed import MNEMONIC_ED
 from mnemonic_dd_fd import MNEMONIC_DD_FD
 from mnemonic_defs import (
-    REG8,
-    REG16_SP,
-    REG16_AF,
     ARITHMETIC,
-    ROTATE_SHIFT,
     CC,
+    REG8,
+    REG16_AF,
+    REG16_SP,
+    ROTATE_SHIFT,
     uint8_to_int8,
 )
+from mnemonic_ed import MNEMONIC_ED
 
 
 def ld_reg8_reg8(op, _):

@@ -1,13 +1,12 @@
 from exceptions import InstructionError
 from mnemonic_defs import (
+    ARITHMETIC,
+    BIT_OP,
     REG8,
     REG16_SP,
-    ARITHMETIC,
     ROTATE_SHIFT_R,
-    BIT_OP,
     uint8_to_int8,
 )
-
 
 
 def add_reg16(op1, op2, _):
@@ -98,7 +97,6 @@ def arithmetic_indexed(op1, op2, mem):
     sign = "-" if ofs < 0 else "+"
     p = (op2 >> 3) & 7
     return f"{ARITHMETIC[p]} ({ixy}{sign}${abs(ofs):02X})"
-
 
 
 MNEMONIC_DD_FD = {

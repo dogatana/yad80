@@ -1,7 +1,7 @@
+import re
+
 import disasm
 from memory import Memory
-
-import re
 
 
 def get_branch(line):

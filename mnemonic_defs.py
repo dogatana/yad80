@@ -10,6 +10,7 @@ BIT_OP = [None, "BIT", "RES", "SET"]
 
 CC = ["NZ", "Z", "NC", "C", "PO", "PE", "P", "M"]
 
+
 def uint8_to_int8(value):
     if value <= 127:
         return value
