@@ -1,19 +1,16 @@
 from exceptions import InstructionError
 from mnemonic_cb import MNEMONIC_CB
 from mnemonic_ed import MNEMONIC_ED
-from mnemonic_dd_fd import MNEMONIC_DD_FD, uint8_to_int8
-
-REG8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"]
-REG16_SP = ["BC", "DE", "HL", "SP"]
-REG16_AF = ["BC", "DE", "HL", "AF"]
-
-ARITHMETIC = ["ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP"]
-ROTATE_SHIFT = ["RLCA", "RRCA", "RLA", "RRA", "DAA", "CPL", "SCF", "CCF"]
-
-ROTATE_SHIFT_R = ["RLC", "RRC", "RL", "RR", "SLA", "SRA", None, "SRL"]
-BIT_OP = [None, "BIT", "RES", "SET"]
-
-CC = ["NZ", "Z", "NC", "C", "PO", "PE", "P", "M"]
+from mnemonic_dd_fd import MNEMONIC_DD_FD
+from mnemonic_defs import (
+    REG8,
+    REG16_SP,
+    REG16_AF,
+    ARITHMETIC,
+    ROTATE_SHIFT,
+    CC,
+    uint8_to_int8,
+)
 
 
 def ld_reg8_reg8(op, _):

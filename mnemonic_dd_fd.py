@@ -1,10 +1,13 @@
 from exceptions import InstructionError
+from mnemonic_defs import (
+    REG8,
+    REG16_SP,
+    ARITHMETIC,
+    ROTATE_SHIFT_R,
+    BIT_OP,
+    uint8_to_int8,
+)
 
-REG8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"]
-REG16_SP = ["BC", "DE", "HL", "SP"]
-ARITHMETIC = ["ADD", "ADC", "SUB", "SBC", "AND", "XOR", "OR", "CP"]
-ROTATE_SHIFT_R = ["RLC", "RRC", "RL", "RR", "SLA", "SRA", None, "SRL"]
-BIT_OP = [None, "BIT", "RES", "SET"]
 
 
 def add_reg16(op1, op2, _):
@@ -96,12 +99,6 @@ def arithmetic_indexed(op1, op2, mem):
     p = (op2 >> 3) & 7
     return f"{ARITHMETIC[p]} ({ixy}{sign}${abs(ofs):02X})"
 
-
-def uint8_to_int8(value):
-    if value <= 127:
-        return value
-    else:
-        return value - 256
 
 
 MNEMONIC_DD_FD = {

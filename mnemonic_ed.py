@@ -1,5 +1,7 @@
-REG8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"]
-REG16_SP = ["BC", "DE", "HL", "SP"]
+from mnemonic_defs import (
+    REG8,
+    REG16_SP,
+)
 
 
 def in_r(op, _):

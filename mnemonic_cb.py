@@ -1,8 +1,9 @@
 from exceptions import InstructionError
-
-REG8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"]
-ROTATE_SHIFT_R = ["RLC", "RRC", "RL", "RR", "SLA", "SRA", None, "SRL"]
-BIT_OP = [None, "BIT", "RES", "SET"]
+from mnemonic_defs import (
+    REG8,
+    ROTATE_SHIFT_R,
+    BIT_OP,
+)
 
 
 def rotate_shift_r(op, _):
