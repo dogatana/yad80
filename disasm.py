@@ -10,6 +10,7 @@ def format_line(addr, text, code):
         [f"{c:02x}" for c in code]
     )
 
+
 def disasm_one(mem):
     addr = mem.ofs
     op = mem.next_byte()

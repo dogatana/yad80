@@ -19,7 +19,7 @@ CC = ["NZ", "Z", "NC", "C", "PO", "PE", "P", "M"]
 def ld_reg8_reg8(op, _):
     r1 = (op >> 3) & 7
     r2 = op & 7
-    if r1 == r2 == 6: # just in case
+    if r1 == r2 == 6:  # just in case
         return "HALT"
     return f"LD {REG8[r1]},{REG8[r2]}"
 
@@ -218,60 +218,61 @@ MNEMONIC = {
     0x07: rotate_shift,
     0x08: lambda *_: "EX AF,AF'",
     0x09: add_hl,
-    0x0a: lambda *_: "LD A,(BC)",
-    0x0b: dec_reg16,
-    0x0c: dec_reg8,
+    0x0A: lambda *_: "LD A,(BC)",
+    0x0B: dec_reg16,
+    0x0C: dec_reg8,
     0x10: djnz,
     0x12: lambda *_: "LD (DE),A",
     0x18: jr,
-    0x1a: lambda *_: "LD A,(DE)",
+    0x1A: lambda *_: "LD A,(DE)",
     0x20: jr_cc,
     0x22: ld_mem_HL,
-    0x2a: ld_HL_mem,
+    0x2A: ld_HL_mem,
     0x32: ld_mem_A,
-    0x3a: ld_A_mem,
+    0x3A: ld_A_mem,
     0x40: ld_reg8_reg8,
     0x76: lambda *_: "HALT",
     0x80: arithmetic_reg8,
-    0xc0: ret_cc,
-    0xc1: pop_reg16,
-    0xc2: jp_cc,
-    0xc3: jp,
-    0xc4: call_cc,
-    0xc5: push_reg16,
-    0xc6: arithmetic_reg8_n,
-    0xc7: rst,
-    0xc9: lambda *_: "RET",
-    0xcb: opecode_cb,
-    0xcd: call,
-    0xd3: out,
-    0xd9: lambda *_: "EXX",
-    0xdb: in_,
-    0xe3: lambda *_: "EX (SP),HL",
-    0xe9: lambda *_: "JP (HL)",
-    0xeb: lambda *_: "EX DE,HL",
-    0xf3: lambda *_: "DI",
-    0xf9: lambda *_: "LD SP,HL",
-    0xfb: lambda *_: "EI",
-    0xdd: opecode_dd_fd,
-    0xed: opecode_ed,
-    0xfd: opecode_dd_fd,
+    0xC0: ret_cc,
+    0xC1: pop_reg16,
+    0xC2: jp_cc,
+    0xC3: jp,
+    0xC4: call_cc,
+    0xC5: push_reg16,
+    0xC6: arithmetic_reg8_n,
+    0xC7: rst,
+    0xC9: lambda *_: "RET",
+    0xCB: opecode_cb,
+    0xCD: call,
+    0xD3: out,
+    0xD9: lambda *_: "EXX",
+    0xDB: in_,
+    0xE3: lambda *_: "EX (SP),HL",
+    0xE9: lambda *_: "JP (HL)",
+    0xEB: lambda *_: "EX DE,HL",
+    0xF3: lambda *_: "DI",
+    0xF9: lambda *_: "LD SP,HL",
+    0xFB: lambda *_: "EI",
+    0xDD: opecode_dd_fd,
+    0xED: opecode_ed,
+    0xFD: opecode_dd_fd,
 }
+
 
 def init_instruction_dict():
     for op in range(0x41, 0x80):
         if op == 0x76:  # HALT
             continue
-        MNEMONIC[op] = MNEMONIC[0x40] # LD r,r'   
+        MNEMONIC[op] = MNEMONIC[0x40]  # LD r,r'
 
-    for op in range(0x81, 0xc0):
-        MNEMONIC[op] = MNEMONIC[0x80] # 8 bit arithmetic
+    for op in range(0x81, 0xC0):
+        MNEMONIC[op] = MNEMONIC[0x80]  # 8 bit arithmetic
 
     for n in range(1, len(REG16_SP)):
         MNEMONIC[0x01 + n * 0x10] = MNEMONIC[0x01]  # LD rr,nn
         MNEMONIC[0x03 + n * 0x10] = MNEMONIC[0x03]  # INC rr
         MNEMONIC[0x09 + n * 0x10] = MNEMONIC[0x09]  # ADD HL,rr
-        MNEMONIC[0x0b + n * 0x10] = MNEMONIC[0x0b]  # DEC rr
+        MNEMONIC[0x0B + n * 0x10] = MNEMONIC[0x0B]  # DEC rr
 
     for n in range(1, len(REG8)):
         MNEMONIC[0x04 + n * 8] = MNEMONIC[0x04]  # INC r
@@ -285,18 +286,19 @@ def init_instruction_dict():
         MNEMONIC[0x20 + n * 8] = MNEMONIC[0x20]  # JR cc
 
     for n in range(1, len(CC)):
-        MNEMONIC[0xc0 + n * 8] = MNEMONIC[0xc0]  # RET cc
-        MNEMONIC[0xc2 + n * 8] = MNEMONIC[0xc2]  # JP CC,nnnn
-        MNEMONIC[0xc4 + n * 8] = MNEMONIC[0xc4]  # CALL CC
+        MNEMONIC[0xC0 + n * 8] = MNEMONIC[0xC0]  # RET cc
+        MNEMONIC[0xC2 + n * 8] = MNEMONIC[0xC2]  # JP CC,nnnn
+        MNEMONIC[0xC4 + n * 8] = MNEMONIC[0xC4]  # CALL CC
 
     for n in range(1, len(REG16_AF)):
-        MNEMONIC[0xc1 + n * 0x10] = MNEMONIC[0xc1]  # POP rr
-        MNEMONIC[0xc5 + n * 0x10] = MNEMONIC[0xc5]  # PUSH rr
+        MNEMONIC[0xC1 + n * 0x10] = MNEMONIC[0xC1]  # POP rr
+        MNEMONIC[0xC5 + n * 0x10] = MNEMONIC[0xC5]  # PUSH rr
 
     for n in range(1, len(ARITHMETIC)):
-        MNEMONIC[0xc6 + n * 8] = MNEMONIC[0xc6] # 8 bit arithmetic
+        MNEMONIC[0xC6 + n * 8] = MNEMONIC[0xC6]  # 8 bit arithmetic
 
     for n in range(1, 8):
-        MNEMONIC[0xc7 + n * 8] = MNEMONIC[0xc7]  # RST n
+        MNEMONIC[0xC7 + n * 8] = MNEMONIC[0xC7]  # RST n
+
 
 init_instruction_dict()
