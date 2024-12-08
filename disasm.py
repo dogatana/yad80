@@ -44,7 +44,7 @@ def disasm(mem, addr, max_line):
             lines[addr] = line
         except Exception as e:
             print(e, f"at {addr:04x}")
-            exit()
+            return lines
 
         lines[addr] = format_line(addr, text, mem[addr : mem.addr])
         addr = mem.addr
