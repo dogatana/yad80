@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # 0000-0049
     # print("")
-    # print("; start: 0000")
+    print("; start: 0000")
     while True:
         try:
             addr, line = disasm.disasm_one(mem)
@@ -47,9 +47,9 @@ if __name__ == "__main__":
                 break
             lines[addr] = line
             branch = get_branch(line)
-            if branch is not None:
+            if branch is not None and branch < mem.max_addr:
                 branches.add(branch)
-            if mem.ofs >= 0x4A:
+            if mem.addr >= 0x4A:
                 break
         except Exception as e:
             print(e)
@@ -63,20 +63,19 @@ if __name__ == "__main__":
             continue
 
         # print("")
-        # print(f"; start:{start_addr:04x}")
-        mem.ofs = start_addr
+        print(f"; start:{start_addr:04x}")
+        mem.addr = start_addr
         while True:
             addr, line = disasm.disasm_one(mem)
             if line == "":
                 break
             lines[addr] = line
             branch = get_branch(line)
-            if branch is not None:
+            if branch is not None and branch < mem.max_addr:
                 branches.add(branch)
             if should_pause(line):
-                ranges.append(range(start_addr, mem.ofs))
+                ranges.append(range(start_addr, mem.addr))
                 break
-        # print(f"; {start_addr:04x} - {mem.ofs - 1:04x}")
 
     ranges.sort(key=lambda r: r.start)
     # print(len(ranges))

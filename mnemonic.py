@@ -102,20 +102,20 @@ def rotate_shift(op, _):
 
 def djnz(_, mem):
     n = mem.next_byte()
-    addr = mem.ofs + uint8_to_int8(n)
+    addr = mem.addr + uint8_to_int8(n)
     return f"DJNZ ${addr:04X}"
 
 
 def jr(_, mem):
     n = mem.next_byte()
-    addr = mem.ofs + uint8_to_int8(n)
+    addr = mem.addr + uint8_to_int8(n)
     return f"JR ${addr:04X}"
 
 
 def jr_cc(op, mem):
     cc = (op >> 3) & 7 - 4
     n = mem.next_byte()
-    addr = mem.ofs + uint8_to_int8(n)
+    addr = mem.addr + uint8_to_int8(n)
     return f"JR {CC[cc]},${addr:04X}"
 
 

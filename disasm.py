@@ -13,36 +13,36 @@ def format_line(addr, text, code):
 
 
 def disasm_one(mem):
-    addr = mem.ofs
+    addr = mem.addr
     op = mem.next_byte()
     if op is None:
         return -1, ""
     try:
         func = MNEMONIC.get(op)
         text = func(op, mem)
-        line = format_line(addr, text, mem[addr : mem.ofs])
+        line = format_line(addr, text, mem[addr : mem.addr])
         return addr, line
     except InstructionError as e:
         raise InstructionError(f"{e} at {addr:04x}")
 
 
 def disasm(mem):
-    addr = mem.ofs
+    addr = mem.addr
     op = mem.next_byte()
     lines = {}
     while op is not None:
         func = MNEMONIC.get(op)
         try:
             text = func(op, mem)
-            line = format_line(addr, text, mem[addr : mem.ofs])
+            line = format_line(addr, text, mem[addr : mem.addr])
             print(line)
             lines[addr] = line
         except Exception as e:
             print(e, f"at {addr:04x}")
             exit()
 
-        lines[addr] = format_line(addr, text, mem[addr : mem.ofs])
-        addr = mem.ofs
+        lines[addr] = format_line(addr, text, mem[addr : mem.addr])
+        addr = mem.addr
         op = mem.next_byte()
     return lines
 
