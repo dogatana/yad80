@@ -1,5 +1,7 @@
 import re
 
+import argparse
+
 import disasm
 from memory import Memory
 
@@ -26,12 +28,98 @@ def in_range(ranges, addr):
     return any(addr in r for r in ranges)
 
 
+def parse_range(arg):
+    addrs = arg.split("-")
+    if len(addrs) != 2:
+        raise argparse.ArgumentTypeError
+    start = parse_addr(addrs[0])
+    stop = parse_addr(addrs[1]) + 1
+    if start >= stop:
+        raise argparse.ArgumentTypeError
+    return range(start, stop)
+
+
+def parse_addr(arg):
+    arg = arg.upper()
+    if arg.startswith("$"):
+        arg = arg[1:]
+    if arg.endswith("H"):
+        arg = arg[:-1]
+    try:
+        return int(arg, base=16)
+    except:  # noqa:E722
+        raise argparse.ArgumentTypeError(f"invalid address: {arg}")
+
+
+def parse_args(args):
+    parser = argparse.ArgumentParser(prog="yad80")
+    parser.add_argument(
+        "--data",
+        "-d",
+        action="extend",
+        nargs="*",
+        type=parse_range,
+        help="disasm as data",
+    )
+    parser.add_argument(
+        "--code",
+        "-c",
+        action="extend",
+        nargs="*",
+        type=parse_range,
+        help="disasm as code",
+    )
+    parser.add_argument(
+        "--string",
+        "-s",
+        action="extend",
+        nargs="*",
+        type=parse_range,
+        help="address(es) to disasm",
+    )
+    parser.add_argument(
+        "--addr",
+        "-a",
+        action="extend",
+        nargs="*",
+        type=parse_addr,
+        help="address(es) to disasm",
+    )
+    parser.add_argument(
+        "--eager", "-e", action="store_true", help="disasm yeagerly(default false)"
+    )
+    parser.add_argument(
+        "--lines",
+        "-l",
+        type=int,
+        default=10,
+        help="max lines for output(default 10)",
+    )
+    parser.add_argument("--offset", "-o", type=int, default=0, help="address offset")
+    parser.add_argument("FILE", help="file to disasm")
+
+    return parser.parse_args(args)
+
+
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) != 2:
+    args = parse_args(sys.argv[1:])
+    print(args)
+
+    mem = Memory(open(args.FILE, "rb").read(), offset=args.offset)
+
+    if not args.eager:
+        if args.addr is None:
+            start_addr = mem.addr
+        elif len(args.addr) == 1:
+            start_addr = args.addr[0]
+        else:
+            print(f"mulitple address {sys.addr} specified")
+            exit()
+
+        disasm.disasm(mem, start_addr, args.lines)
         exit()
-    mem = Memory(open(sys.argv[1], "rb").read())
 
     branches = set()
     ranges = [range(0x4A)]

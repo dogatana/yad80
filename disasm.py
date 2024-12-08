@@ -7,7 +7,7 @@ from mnemonic import MNEMONIC
 
 def format_line(addr, text, code):
     items = text.split(" ", maxsplit=2)
-    return f"{items[0]:6}{' '.join(items[1:]):34};[{addr:04x}] " + " ".join(
+    return f"        {items[0]:6}{' '.join(items[1:]):34};[{addr:04x}] " + " ".join(
         [f"{c:02x}" for c in code]
     )
 
@@ -26,10 +26,15 @@ def disasm_one(mem):
         raise InstructionError(f"{e} at {addr:04x}")
 
 
-def disasm(mem):
-    addr = mem.addr
+def disasm(mem, addr, max_line):
+    if not mem.addr_in(addr):
+        print(f"start address is out of range {addr:04x}")
+        exit()
+
+    mem.addr = addr
     op = mem.next_byte()
     lines = {}
+    count = 0
     while op is not None:
         func = MNEMONIC.get(op)
         try:
@@ -44,6 +49,9 @@ def disasm(mem):
         lines[addr] = format_line(addr, text, mem[addr : mem.addr])
         addr = mem.addr
         op = mem.next_byte()
+        count += 1
+        if count >= max_line:
+            break
     return lines
 
 

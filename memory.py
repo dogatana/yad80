@@ -33,6 +33,9 @@ class Memory:
     def __len__(self):
         return len(self.block)
 
+    def addr_in(self, addr):
+        return self.min_addr <= addr <= self.max_addr
+
     def __getitem__(self, index):
         if isinstance(index, int):
             ofs = index - self.offset
