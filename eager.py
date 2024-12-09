@@ -175,6 +175,13 @@ def disasm_eagerly(args, mem):
             break
 
     db_ranges = []
+    min_start = ranges[0].start
+    if min_start < mem.min_addr:
+        db_ranges.append(range(mem.min_addr, min_start - 1))
+    max_stop = max(r.stop for r in ranges)
+    if max_stop <= mem.min_addr:
+        db_ranges.append(range(max_stop, mem.min_addr + 1))
+
     for n, rng in enumerate(ranges[:-1]):
         db_ranges.append(range(rng.stop, ranges[n + 1].start))
 
