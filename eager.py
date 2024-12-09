@@ -70,6 +70,29 @@ def bytes2ascii(bstr):
             block[n] = ord(".")
     return block.decode("ascii")
 
+def bytes2dbstring(bstr):
+    block = bytearray(bstr)
+    ret = ""
+    for n, b in enumerate(block):
+        if b < 0x20 or b >= 0x7E:
+            ret += f"\\x{b:02x}"
+        else:
+            ret += chr(b)
+    return ret
+
+def define_db(mem, rng):
+    lines = {}
+    for addr in range(rng.start, rng.stop, 8):
+        block = bytearray(mem[addr : min(addr + 8, rng.stop)])
+        line = "DB    " + ",".join(f"${b:02X}" for b in block)
+        line += "    " * (8 - len(block))
+        for n, b in enumerate(block):
+            if b < 0x20 or b >= 0x7E:
+                block[n] = ord(".")
+        line += f"   ;[{addr:04x}] " + block.decode("ascii")
+        lines[addr] = line
+    return lines
+
 
 def disasm_eagerly(args, mem):
     ranges = []
@@ -133,6 +156,10 @@ def disasm_eagerly(args, mem):
                     ranges.append(range(start_addr, mem.addr))
                     break
 
+    # for r in args.data:
+    #     print(bytes2dbstring(mem[r.start:r.stop]))
+    # breakpoint()
+
     ranges.sort(key=lambda r: r.start)
 
     merged = True
@@ -152,16 +179,7 @@ def disasm_eagerly(args, mem):
         db_ranges.append(range(rng.stop, ranges[n + 1].start))
 
     for rng in db_ranges:
-        # print(f"; {rng.start:04x}-{rng.stop - 1:04x}[{len(rng)}]", rng)
-        for addr in range(rng.start, rng.stop, 8):
-            block = bytearray(mem[addr : min(addr + 8, rng.stop)])
-            line = "DB    " + ",".join(f"${b:02X}" for b in block)
-            line += "    " * (8 - len(block))
-            for n, b in enumerate(block):
-                if b < 0x20 or b >= 0x7E:
-                    block[n] = ord(".")
-            line += f"   ;[{addr:04x}] " + block.decode("ascii")
-            lines[addr] = line
+        lines.update(define_db(mem, rng))
 
     set_label_name(mem)
     replace_addr(lines)

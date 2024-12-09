@@ -36,6 +36,7 @@ def parse_args(args):
         action="extend",
         nargs="*",
         type=parse_range,
+        default=[],
         help="disasm as data",
     )
     parser.add_argument(
