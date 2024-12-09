@@ -63,6 +63,13 @@ def replace_addr(lines):
         for addr in label.used_addr:
             lines[addr] = lines[addr].replace(f"${target:04X}", label.name)
 
+def bytes2ascii(bstr):
+    block = bytearray(bstr)
+    for n, b in enumerate(block):
+        if b < 0x20 or b >= 0x7E:
+            block[n] = ord(".")
+    return block.decode("ascii")
+
 
 def disasm_eagerly(args, mem):
     ranges = []
@@ -175,3 +182,11 @@ def disasm_eagerly(args, mem):
             print(f"\n{label.name}:")
         cols = lines[addr].split(";")
         print(" " * 16 + f"{cols[0].strip():40}; {cols[1].strip()}")
+    
+    # data or code
+    print("")
+    for rng in db_ranges:
+        decoded = bytes2ascii(mem[rng.start:rng.stop])
+        print(f"; ${rng.start:04x}-${rng.stop - 1:04x}, [${len(rng):3x}] ", end="")
+        print(decoded[:32])
+
