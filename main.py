@@ -44,6 +44,7 @@ def parse_args(args):
         action="extend",
         nargs="*",
         type=parse_range,
+        default=[],
         help="disasm as code",
     )
     parser.add_argument(
@@ -82,8 +83,6 @@ if __name__ == "__main__":
     import sys
 
     args = parse_args(sys.argv[1:])
-    print(";", args)
-
     mem = Memory(open(args.FILE, "rb").read(), offset=args.offset)
 
     if args.eager:

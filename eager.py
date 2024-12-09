@@ -7,15 +7,21 @@ import re
 @dataclass
 class Label:
     addr: int
-    name: str
-    refs: set
+    label_type: set
+    used_addr: set
+    processed: bool
 
+labels = defaultdict(dict)
 
-def get_branch(line):
-    m = re.search(r"^\s*(?:JP|JR|CALL)\s+.*?\$([0-9a-f]{4})", line, flags=re.IGNORECASE)
+def get_branch(addr, line):
+    m = re.search(r"^\s*(JP|JR|CALL)\s+.*?\$([0-9a-f]{4})", line, flags=re.IGNORECASE)
     if m is None:
         return None
-    return int(m.group(1), base=16)
+    dst = int(m.group(2), base=16)
+    label = labels.setdefault(dst, Label(dst, set(), set(), False))
+    label.label_type.add(m.group(1))
+    label.used_addr.add(addr)
+    return label
 
 
 STOP = set(["RET", "RETI", "RETN", "HALT"])
@@ -34,7 +40,6 @@ def in_range(ranges, addr):
 
 
 def parse_label(lines):
-    labels = defaultdict(dict)
     for addr, line in lines.items():
         m = re.search(r"(JP|JR|CALL).*?\$([0-9A-F]{4})", line, flags=re.IGNORECASE)
         if m is None:
@@ -49,49 +54,63 @@ def parse_label(lines):
 
 
 def disasm_eagerly(args, mem):
-    branches = set()
-    ranges = [range(0x4A)]
+    ranges = []
     lines = {}
 
+    for r in args.code:
+        ranges.append(r)
+        mem.start = r.start
+        print(f"; start: {mem.start:04x}")
+        while mem.addr < r.stop:
+            try:
+                addr, line = disasm.disasm_one(mem)
+                if line == "":
+                    break
+                lines[addr] = line
+                get_branch(addr, line)
+            except Exception as e:
+                print(e)
+                exit()
+
+    # breakpoint()
     # 0000-0049
     # print("")
-    print("; start: 0000")
-    while True:
-        try:
-            addr, line = disasm.disasm_one(mem)
-            if line == "":
-                break
-            lines[addr] = line
-            branch = get_branch(line)
-            if branch is not None and branch < mem.max_addr:
-                branches.add(branch)
-            if mem.addr >= 0x4A:
-                break
-        except Exception as e:
-            print(e)
-            exit()
-
+    # print("; start: 0000")
+    # while True:
+    #     try:
+    #         addr, line = disasm.disasm_one(mem)
+    #         if line == "":
+    #             break
+    #         lines[addr] = line
+    #         get_branch(addr, line)
+    #         if mem.addr >= 0x4A:
+    #             break
+    #     except Exception as e:
+    #         print(e)
+    #         exit()
+    
     # 004a-0fff
-    while branches:
-        start_addr = min(branches)
-        branches.remove(start_addr)
-        if any(start_addr in r for r in ranges):
-            continue
+    while True:
+        branches = sorted(a for a,lbl in labels.items() if not lbl.processed)
+        # breakpoint()
+        if not branches:
+            break
+        for start_addr in branches:
+            if start_addr in lines or not mem.addr_in(start_addr):
+                labels[start_addr].processed = True
+                continue
 
-        # print("")
-        print(f"; start:{start_addr:04x}")
-        mem.addr = start_addr
-        while True:
-            addr, line = disasm.disasm_one(mem)
-            if line == "":
-                break
-            lines[addr] = line
-            branch = get_branch(line)
-            if branch is not None and branch < mem.max_addr:
-                branches.add(branch)
-            if should_pause(line):
-                ranges.append(range(start_addr, mem.addr))
-                break
+            print(f"; start:{start_addr:04x}")
+            mem.addr = start_addr
+            while True:
+                addr, line = disasm.disasm_one(mem)
+                if line == "":
+                    break
+                lines[addr] = line
+                get_branch(addr, line)
+                if should_pause(line):
+                    ranges.append(range(start_addr, mem.addr))
+                    break
 
     ranges.sort(key=lambda r: r.start)
     # print(len(ranges))
