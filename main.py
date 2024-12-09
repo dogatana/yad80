@@ -53,6 +53,7 @@ def parse_args(args):
         action="extend",
         nargs="*",
         type=parse_range,
+        default=[],
         help="address(es) to disasm",
     )
     parser.add_argument(
@@ -61,6 +62,7 @@ def parse_args(args):
         action="extend",
         nargs="*",
         type=parse_addr,
+        default=[],
         help="address(es) to disasm",
     )
     parser.add_argument(
@@ -89,12 +91,12 @@ if __name__ == "__main__":
         disasm_eagerly(args, mem)
         exit()
 
-    if args.addr is None:
+    if not args.addr:
         start_addr = mem.addr
     elif len(args.addr) == 1:
         start_addr = args.addr[0]
     else:
-        print(f"mulitple address {sys.addr} specified")
+        print(f"mulitple address {args.addr} specified")
         exit()
 
     disasm.disasm(mem, start_addr, args.lines)

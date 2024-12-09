@@ -16,9 +16,9 @@ class Label:
 labels = defaultdict(dict)
 
 LABEL_TYPE = {
-    "CALL": "C",
-    "JR": "R",
-    "JP": "P",
+    "CALL": "CD",
+    "JR": "JR",
+    "JP": "JP",
 }
 
 
@@ -68,11 +68,12 @@ def disasm_eagerly(args, mem):
     ranges = []
     lines = {}
 
-    for r in args.code:
-        ranges.append(r)
-        mem.start = r.start
+    # --code
+    for rng in args.code:
+        ranges.append(rng)
+        mem.start = rng.start
         print(f"; start: {mem.start:04x}")
-        while mem.addr < r.stop:
+        while mem.addr < rng.stop:
             try:
                 addr, line = disasm.disasm_one(mem)
                 if line == "":
@@ -83,6 +84,28 @@ def disasm_eagerly(args, mem):
                 print(e)
                 exit()
 
+    addrs = args.addr
+    if not lines and not addrs:
+        # no --code, no --addr
+        addrs = [mem.min_addr]
+
+    for start_addr in addrs:
+        start = mem.min_addr
+        mem.start = start
+        while True:
+            try:
+                addr, line = disasm.disasm_one(mem)
+                if line == "":
+                    break
+                lines[addr] = line
+                get_branch(addr, line)
+            except Exception as e:
+                print(e)
+                exit()
+            if should_pause(line):
+                ranges.append(range(start, mem.addr))
+                break
+
     while True:
         branches = sorted(a for a, lbl in labels.items() if not lbl.processed)
         if not branches:
@@ -92,7 +115,6 @@ def disasm_eagerly(args, mem):
                 labels[start_addr].processed = True
                 continue
 
-            print(f"; start:{start_addr:04x}")
             mem.addr = start_addr
             while True:
                 addr, line = disasm.disasm_one(mem)
@@ -105,9 +127,7 @@ def disasm_eagerly(args, mem):
                     break
 
     ranges.sort(key=lambda r: r.start)
-    # print(len(ranges))
-    # for r in ranges:
-    #     print(f"{r.start:04x}-{r.stop - 1:04x}", r)
+
     merged = True
     while merged:
         merged = False
@@ -119,20 +139,16 @@ def disasm_eagerly(args, mem):
             ranges[n : n + 2] = [range(start, stop)]
             merged = True
             break
-    # print(len(ranges))
-    # for r in ranges:
-    #     print(f"{r.start:04x}-{r.stop - 1:04x}", r)
 
-    # print("; db_ranges")
     db_ranges = []
-    for n, r in enumerate(ranges[:-1]):
-        db_ranges.append(range(r.stop, ranges[n + 1].start))
+    for n, rng in enumerate(ranges[:-1]):
+        db_ranges.append(range(rng.stop, ranges[n + 1].start))
 
-    for r in db_ranges:
-        print(f"; {r.start:04x}-{r.stop - 1:04x}[{len(r)}]", r)
-        for addr in range(r.start, r.stop, 8):
-            block = bytearray(mem[addr : min(addr + 8, r.stop)])
-            line = "db    " + ",".join(f"${b:02x}" for b in block)
+    for rng in db_ranges:
+        # print(f"; {rng.start:04x}-{rng.stop - 1:04x}[{len(rng)}]", rng)
+        for addr in range(rng.start, rng.stop, 8):
+            block = bytearray(mem[addr : min(addr + 8, rng.stop)])
+            line = "DB    " + ",".join(f"${b:02X}" for b in block)
             line += "    " * (8 - len(block))
             for n, b in enumerate(block):
                 if b < 0x20 or b >= 0x7E:
@@ -146,19 +162,16 @@ def disasm_eagerly(args, mem):
     # EX_ EQU
     for label in labels.values():
         if label.name.startswith("EX_"):
-            print(f"{label.name:16}EQU ${label.addr:04x}")
+            print(f"{label.name:16}EQU   ${label.addr:04x}")
     print("")
 
     addrs = sorted(lines.keys())
     # ORG
-    print(f"\t\tORG ${addrs[0]:04X}\n")
+    print(" " * 16 + f"ORG   ${addrs[0]:04X}\n")
 
     for addr in addrs:
         label = labels.get(addr)
         if label is not None:
-            print("")
-            name = label.name + ":"
-        else:
-            name = ""
-        print(f"{name:16}", end="")
-        print(lines[addr])
+            print(f"\n{label.name}:")
+        cols = lines[addr].split(";")
+        print(" " * 16 + f"{cols[0].strip():40}; {cols[1].strip()}")
