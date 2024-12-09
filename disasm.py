@@ -7,7 +7,7 @@ from mnemonic import MNEMONIC
 
 def format_line(addr, text, code):
     items = text.split(" ", maxsplit=2)
-    return f"        {items[0]:6}{' '.join(items[1:]):34};[{addr:04x}] " + " ".join(
+    return f"{items[0]:6}{' '.join(items[1:]):34};[{addr:04x}] " + " ".join(
         [f"{c:02x}" for c in code]
     )
 
@@ -40,7 +40,7 @@ def disasm(mem, addr, max_line):
         try:
             text = func(op, mem)
             line = format_line(addr, text, mem[addr : mem.addr])
-            print(line)
+            print(" " * 16 + line)
             lines[addr] = line
         except Exception as e:
             print(e, f"at {addr:04x}")

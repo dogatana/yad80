@@ -10,16 +10,25 @@ class Label:
     label_type: set
     used_addr: set
     processed: bool
+    name: str = ""
+
 
 labels = defaultdict(dict)
+
+LABEL_TYPE = {
+    "CALL": "C",
+    "JR": "R",
+    "JP": "P",
+}
+
 
 def get_branch(addr, line):
     m = re.search(r"^\s*(JP|JR|CALL)\s+.*?\$([0-9a-f]{4})", line, flags=re.IGNORECASE)
     if m is None:
         return None
-    dst = int(m.group(2), base=16)
-    label = labels.setdefault(dst, Label(dst, set(), set(), False))
-    label.label_type.add(m.group(1))
+    target = int(m.group(2), base=16)
+    label = labels.setdefault(target, Label(target, set(), set(), False))
+    label.label_type.add(LABEL_TYPE[m.group(1)])
     label.used_addr.add(addr)
     return label
 
@@ -39,18 +48,20 @@ def in_range(ranges, addr):
     return any(addr in r for r in ranges)
 
 
-def parse_label(lines):
-    for addr, line in lines.items():
-        m = re.search(r"(JP|JR|CALL).*?\$([0-9A-F]{4})", line, flags=re.IGNORECASE)
-        if m is None:
-            continue
-        op = m.group(1)
-        target = int(m.group(2), base=16)
-        label = labels[op].setdefault(
-            target, Label(target, f"{op}_{target:04X}", set())
-        )
-        label.refs.add(addr)
-    return labels
+def set_label_name(mem):
+    for label in labels.values():
+        base = "".join(sorted(label.label_type))
+        name = f"{base}_{label.addr:04X}"
+        if mem.addr_in(label.addr):
+            label.name = name
+        else:
+            label.name = f"EX_{name}"
+
+
+def replace_addr(lines):
+    for target, label in labels.items():
+        for addr in label.used_addr:
+            lines[addr] = lines[addr].replace(f"${target:04X}", label.name)
 
 
 def disasm_eagerly(args, mem):
@@ -72,27 +83,8 @@ def disasm_eagerly(args, mem):
                 print(e)
                 exit()
 
-    # breakpoint()
-    # 0000-0049
-    # print("")
-    # print("; start: 0000")
-    # while True:
-    #     try:
-    #         addr, line = disasm.disasm_one(mem)
-    #         if line == "":
-    #             break
-    #         lines[addr] = line
-    #         get_branch(addr, line)
-    #         if mem.addr >= 0x4A:
-    #             break
-    #     except Exception as e:
-    #         print(e)
-    #         exit()
-    
-    # 004a-0fff
     while True:
-        branches = sorted(a for a,lbl in labels.items() if not lbl.processed)
-        # breakpoint()
+        branches = sorted(a for a, lbl in labels.items() if not lbl.processed)
         if not branches:
             break
         for start_addr in branches:
@@ -148,5 +140,25 @@ def disasm_eagerly(args, mem):
             line += f"   ;[{addr:04x}] " + block.decode("ascii")
             lines[addr] = line
 
-    for addr in sorted(lines.keys()):
+    set_label_name(mem)
+    replace_addr(lines)
+
+    # EX_ EQU
+    for label in labels.values():
+        if label.name.startswith("EX_"):
+            print(f"{label.name:16}EQU ${label.addr:04x}")
+    print("")
+
+    addrs = sorted(lines.keys())
+    # ORG
+    print(f"\t\tORG ${addrs[0]:04X}\n")
+
+    for addr in addrs:
+        label = labels.get(addr)
+        if label is not None:
+            print("")
+            name = label.name + ":"
+        else:
+            name = ""
+        print(f"{name:16}", end="")
         print(lines[addr])
