@@ -26,7 +26,6 @@ class Memory:
     @addr.setter
     def addr(self, value):
         if value < self.min_addr or value > self.max_addr:
-            breakpoint()
             raise AddressError(f"invalide addr {value:04x}")
         self.current = value - self.offset
 
@@ -57,7 +56,6 @@ class Memory:
         else:
             stop -= self.offset
         if start < 0 or stop < 0 or stop > len(self.block) or start >= stop:
-            breakpoint()
             raise AddressError(f"invalide index {index!r}")
 
         return self.block[start:stop]
