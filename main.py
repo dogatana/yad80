@@ -71,12 +71,12 @@ def parse_args(args):
         "--eager", "-e", action="store_true", help="disasm yeagerly(default false)"
     )
     parser.add_argument(
-        "--lines",
-        "-l",
+        "--max-lines",
+        "-m",
         type=int,
-        default=10,
+        default=32,
         metavar="N",
-        help="max lines for output(default 10)",
+        help="max lines for output(default 32)",
     )
     parser.add_argument(
         "--offset", "-o", type=int, default=0, help="address offset for binary file"
@@ -105,4 +105,4 @@ if __name__ == "__main__":
         print(f"mulitple address {args.addr} specified")
         exit()
 
-    disasm.disasm(mem, start_addr, args.lines)
+    disasm.disasm(mem, start_addr, args.max_lines)
