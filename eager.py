@@ -10,7 +10,22 @@ class Label:
     label_type: set
     used_addr: set
     processed: bool
-    name: str = ""
+    name_cache: str = ""
+
+    @property
+    def name(self):
+        if self.name_cache != "":
+            return self.name_cache
+
+        base = "".join(sorted(self.label_type))
+        self.name_cache = f"{base}_{self.addr:04X}"
+        return self.name_cache
+
+    def check_external(self, mem):
+        if mem.addr_in(self.addr):
+            return
+        if not self.name.startswith("EX_"):
+            self.name_cache = "EX_" + self.name_cache
 
 
 labels = defaultdict(dict)
@@ -46,16 +61,6 @@ def should_pause(line):
 
 def in_range(ranges, addr):
     return any(addr in r for r in ranges)
-
-
-def set_label_name(mem):
-    for label in labels.values():
-        base = "".join(sorted(label.label_type))
-        name = f"{base}_{label.addr:04X}"
-        if mem.addr_in(label.addr):
-            label.name = name
-        else:
-            label.name = f"EX_{name}"
 
 
 def replace_addr(lines):
@@ -116,7 +121,7 @@ def disasm_eagerly(args, mem):
                 get_branch(addr, line)
             except Exception as e:
                 print(e)
-                exit()
+                # exit()
 
     # --string
     for rng in args.string:
@@ -197,12 +202,13 @@ def disasm_eagerly(args, mem):
     for rng in db_ranges:
         lines.update(define_db(mem, rng))
 
-    set_label_name(mem)
+    for label in labels.values():
+        label.check_external(mem)
     replace_addr(lines)
 
-    # EX_ EQU
+    # external label - EX_ EQU
     for label in labels.values():
-        if label.name.startswith("EX_"):
+        if not mem.addr_in(label.addr):
             print(f"{label.name:16}EQU   ${label.addr:04x}")
     print("")
 
