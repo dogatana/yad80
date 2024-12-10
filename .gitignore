@@ -17,6 +17,7 @@ venv/
 *.dis
 *.rom
 *.o
+*.mzt
 
 temp/
 test/
