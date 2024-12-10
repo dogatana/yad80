@@ -29,12 +29,10 @@ class Label:
 
 
 def get_branch(labels, addr, line):
-    LABEL_TYPE = {
-        "CALL": "CD",
-        "JR": "JR",
-        "JP": "JP",
-    }
-    m = re.search(r"^\s*(JP|JR|CALL)\s+.*?\$([0-9a-f]{4})", line, flags=re.IGNORECASE)
+    LABEL_TYPE = {"CALL": "CD", "JR": "JR", "JP": "JP", "DJNZ": "JR"}
+    m = re.search(
+        r"^\s*(JP|JR|DJNZ|CALL)\s+.*?\$([0-9a-f]{4})", line, flags=re.IGNORECASE
+    )
     if m is None:
         return None
     target = int(m.group(2), base=16)
