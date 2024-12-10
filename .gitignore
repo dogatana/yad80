@@ -13,6 +13,7 @@ venv/
 *.txt
 
 *.asm
+*.lis
 *.bin
 *.dis
 *.rom
