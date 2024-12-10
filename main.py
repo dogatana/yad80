@@ -2,7 +2,6 @@ import argparse
 
 import disasm
 from eager import disasm_eagerly
-from memory import Memory
 from loader import load
 
 
@@ -99,7 +98,7 @@ if __name__ == "__main__":
         exit()
 
     if not args.addr:
-        start_addr = mem.addr
+        start_addr = mem.start
     elif len(args.addr) == 1:
         start_addr = args.addr[0]
     else:
