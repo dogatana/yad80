@@ -99,6 +99,39 @@ def arithmetic_indexed(op1, op2, mem):
     return f"{ARITHMETIC[p]} ({ixy}{sign}${abs(ofs):02X})"
 
 
+def ld_reg8_n(op1, op2, mem):
+    ixy = "IX" if op1 == 0xDD else "IY"
+    r = (op2 >> 3) & 7
+    n = mem.next_byte()
+    return f"LD {ixy}{REG8[r]},${n:02X}"
+
+
+def ld_reg8_reg8(op1, op2, _):
+    ixy = "IX" if op1 == 0xDD else "IY"
+    r1 = (op2 >> 3) & 7
+    r2 = op2 & 7
+    if r1 == r2 == 6:  # just in case
+        return "NOP"
+    reg1 = REG8[r1]
+    reg2 = REG8[r2]
+    if reg1 in {"H", "L"}:
+        reg1 = ixy + reg1
+    if reg2 in {"H", "L"}:
+        reg2 = ixy + reg2
+    return f"LD {reg1},{reg2}"
+
+
+def arithmetic_reg8(op1, op2, _):
+    ixy = "IX" if op1 == 0xDD else "IY"
+    p = (op2 >> 3) & 7
+    r = op2 & 7
+    reg = REG8[r]
+    if reg in {"H", "L"}:
+        reg = ixy + reg
+
+    return f"{ARITHMETIC[p]}{reg}"
+
+
 MNEMONIC_DD_FD = {
     0x09: add_reg16,
     0x21: ld_index_n,
@@ -107,8 +140,15 @@ MNEMONIC_DD_FD = {
     0x34: inc_dec_indexed,
     0x35: inc_dec_indexed,
     0x36: ld_indexed_n,
+    0x26: ld_reg8_n,  # undocumented
+    0x2E: ld_reg8_n,  # undocumented
     0x23: lambda op, *_: "INC IX" if op == 0xDD else "INC IY",
     0x2B: lambda op, *_: "DEC IX" if op == 0xDD else "DEC IY",
+    0x24: lambda op, *_: "INC IXH" if op == 0xDD else "INC IYH",  # undocumented
+    0x25: lambda op, *_: "DEC IXH" if op == 0xDD else "DEC IYH",  # undocumented
+    0x2C: lambda op, *_: "INC IXL" if op == 0xDD else "INC IYL",  # undocumented
+    0x2D: lambda op, *_: "DEC IXL" if op == 0xDD else "DEC IYL",  # undocumented
+    0x44: ld_reg8_reg8,
     0x46: ld_reg8_indexed,
     0x70: ld_indexed_reg8,
     0x86: arithmetic_indexed,
@@ -131,6 +171,22 @@ def init_instruction_dict():
 
     for n in range(1, len(ARITHMETIC)):
         MNEMONIC_DD_FD[0x86 + n * 8] = MNEMONIC_DD_FD[0x86]  # arithmetic
+
+    # undocumented LD r,r'
+    for r1 in [0, 1, 2, 3, 7]:
+        for r2 in [4, 5]:
+            op = 0x40 + (r1 << 3) + r2
+            MNEMONIC_DD_FD[op] = ld_reg8_reg8
+    for r1 in [4, 5]:
+        for r2 in [0, 1, 2, 3, 5, 7]:
+            op = 0x40 + (r1 << 3) + r2
+            MNEMONIC_DD_FD[op] = ld_reg8_reg8
+
+    # undocumented arithmetic r
+    for aop in range(8):
+        for r in [4, 5]:
+            op = 0x80 + (aop << 3) + r
+            MNEMONIC_DD_FD[op] = arithmetic_reg8
 
 
 init_instruction_dict()
