@@ -3,6 +3,7 @@ import argparse
 import disasm
 from eager import disasm_eagerly
 from memory import Memory
+from loader import load
 
 
 def parse_addr(arg):
@@ -91,7 +92,7 @@ if __name__ == "__main__":
 
     args = parse_args(sys.argv[1:])
     print(";", args)
-    mem = Memory(open(args.FILE, "rb").read(), offset=args.offset)
+    mem = load(args.FILE)
 
     if args.eager:
         disasm_eagerly(args, mem)
