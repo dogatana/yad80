@@ -203,6 +203,7 @@ def disasm_eagerly(args, mem):
     min_start = ranges[0].start
     if min_start < mem.min_addr:
         db_ranges.append(range(mem.min_addr, min_start - 1))
+
     max_stop = max(r.stop for r in ranges)
     if max_stop <= mem.max_addr:
         db_ranges.append(range(max_stop, mem.max_addr + 1))

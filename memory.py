@@ -8,7 +8,7 @@ class Memory:
         self.offset = offset
         self.current = 0
         self.min_addr = offset
-        self.max_addr = offset + len(block)
+        self.max_addr = offset + len(block) - 1
 
     def next_byte(self):
         if self.current < len(self.block):
