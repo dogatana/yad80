@@ -51,7 +51,7 @@ def should_pause(line):
     code = line.split(";")[0].strip()
     if code in STOP:
         return True
-    m = re.search(r"^\s*(JP|JR)\s+\$", line)
+    m = re.search(r"^\s*(JP|JR)\s+[\$(]", line)
     return m is not None
 
 
