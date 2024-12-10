@@ -28,9 +28,6 @@ class Label:
             self.name_cache = "EX_" + self.name_cache
 
 
-
-
-
 def get_branch(labels, addr, line):
     LABEL_TYPE = {
         "CALL": "CD",
@@ -62,10 +59,26 @@ def in_range(ranges, addr):
     return any(addr in r for r in ranges)
 
 
-def replace_addr(labels, lines):
+def replace_branch_addr(labels, lines):
     for target, label in labels.items():
         for addr in label.used_addr:
             lines[addr] = lines[addr].replace(f"${target:04X}", label.name)
+
+
+def replace_string_addr(labels, lines):
+    addrs = set()
+    for label in labels.values():
+        if re.match(r"(EX_)?ST_", label.name) is not None:
+            addrs.add(label.addr)
+
+    for addr, line in lines.items():
+        m = re.search(r"LD\s+\w{2},\$([0-9A-F]{4})", line)
+        if m is None:
+            continue
+        str_addr = int(m.group(1), base=16)
+        if str_addr not in addrs:
+            continue
+        lines[addr] = lines[addr].replace(f"${str_addr:04X}", labels[str_addr].name)
 
 
 def bytes2ascii(bstr):
@@ -204,7 +217,8 @@ def disasm_eagerly(args, mem):
 
     for label in labels.values():
         label.check_external(mem)
-    replace_addr(labels, lines)
+    replace_branch_addr(labels, lines)
+    replace_string_addr(labels, lines)
 
     # external label - EX_ EQU
     for label in labels.values():
