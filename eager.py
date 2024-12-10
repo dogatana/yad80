@@ -28,16 +28,15 @@ class Label:
             self.name_cache = "EX_" + self.name_cache
 
 
-labels = defaultdict(dict)
-
-LABEL_TYPE = {
-    "CALL": "CD",
-    "JR": "JR",
-    "JP": "JP",
-}
 
 
-def get_branch(addr, line):
+
+def get_branch(labels, addr, line):
+    LABEL_TYPE = {
+        "CALL": "CD",
+        "JR": "JR",
+        "JP": "JP",
+    }
     m = re.search(r"^\s*(JP|JR|CALL)\s+.*?\$([0-9a-f]{4})", line, flags=re.IGNORECASE)
     if m is None:
         return None
@@ -63,7 +62,7 @@ def in_range(ranges, addr):
     return any(addr in r for r in ranges)
 
 
-def replace_addr(lines):
+def replace_addr(labels, lines):
     for target, label in labels.items():
         for addr in label.used_addr:
             lines[addr] = lines[addr].replace(f"${target:04X}", label.name)
@@ -106,6 +105,7 @@ def define_db(mem, rng):
 def disasm_eagerly(args, mem):
     ranges = []
     lines = {}
+    labels = defaultdict(dict)
 
     # --code
     for rng in args.code:
@@ -118,7 +118,7 @@ def disasm_eagerly(args, mem):
                 if line == "":
                     break
                 lines[addr] = line
-                get_branch(addr, line)
+                get_branch(labels, addr, line)
             except Exception as e:
                 print(e)
                 # exit()
@@ -146,7 +146,7 @@ def disasm_eagerly(args, mem):
                 if line == "":
                     break
                 lines[addr] = line
-                get_branch(addr, line)
+                get_branch(labels, addr, line)
             except Exception as e:
                 print(e)
                 exit()
@@ -169,7 +169,7 @@ def disasm_eagerly(args, mem):
                 if line == "":
                     break
                 lines[addr] = line
-                get_branch(addr, line)
+                get_branch(labels, addr, line)
                 if should_pause(line):
                     ranges.append(range(start_addr, mem.addr))
                     break
@@ -204,7 +204,7 @@ def disasm_eagerly(args, mem):
 
     for label in labels.values():
         label.check_external(mem)
-    replace_addr(lines)
+    replace_addr(labels, lines)
 
     # external label - EX_ EQU
     for label in labels.values():
