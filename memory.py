@@ -2,8 +2,9 @@ from exceptions import AddressError
 
 
 class Memory:
-    def __init__(self, block, offset=0):
+    def __init__(self, block, start=0, offset=0):
         self.block = block
+        self.start = start
         self.offset = offset
         self.current = 0
         self.min_addr = offset
