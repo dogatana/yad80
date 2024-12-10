@@ -33,11 +33,9 @@ def parse_args(args):
     parser.add_argument(
         "--data",
         "-d",
-        action="extend",
-        nargs="*",
-        type=parse_range,
-        default=[],
-        help="disasm as data",
+        action="store_true",
+        default=False,
+        help="check data reference",
     )
     parser.add_argument(
         "--code",
@@ -46,7 +44,8 @@ def parse_args(args):
         nargs="*",
         type=parse_range,
         default=[],
-        help="disasm as code",
+        metavar="RANGE",
+        help="address range(a1-a2) as code. a2 is an inclusive address",
     )
     parser.add_argument(
         "--string",
@@ -55,7 +54,8 @@ def parse_args(args):
         nargs="*",
         type=parse_range,
         default=[],
-        help="address(es) to disasm",
+        metavar="RANGE",
+        help="address range(a1-a2) as code. a2 is an inclusive address",
     )
     parser.add_argument(
         "--addr",
@@ -64,6 +64,7 @@ def parse_args(args):
         nargs="*",
         type=parse_addr,
         default=[],
+        metavar="ADDR",
         help="address(es) to disasm",
     )
     parser.add_argument(
@@ -74,9 +75,12 @@ def parse_args(args):
         "-l",
         type=int,
         default=10,
+        metavar="N",
         help="max lines for output(default 10)",
     )
-    parser.add_argument("--offset", "-o", type=int, default=0, help="address offset")
+    parser.add_argument(
+        "--offset", "-o", type=int, default=0, help="address offset for binary file"
+    )
     parser.add_argument("FILE", help="file to disasm")
 
     return parser.parse_args(args)
@@ -86,6 +90,7 @@ if __name__ == "__main__":
     import sys
 
     args = parse_args(sys.argv[1:])
+    print(";", args)
     mem = Memory(open(args.FILE, "rb").read(), offset=args.offset)
 
     if args.eager:
