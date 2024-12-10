@@ -38,25 +38,21 @@ class Memory:
 
     def __getitem__(self, index):
         if isinstance(index, int):
-            ofs = index - self.offset
-            if ofs < 0 or ofs >= len(self.block):
+            if index < self.min_addr or index > self.max_addr:
                 raise AddressError(f"{index:04x} out of range")
-            return self.block[ofs]
+            return self.block[index - self.offset]
 
         if not isinstance(index, slice):
             raise AddressError(f"invalide index {index!r}")
 
         start, stop = index.start, index.stop
         if start is None:
-            start = 0
-        else:
-            start -= self.offset
+            start = self.min_addr
 
         if stop is None:
-            stop = len(self.block)
-        else:
-            stop -= self.offset
-        if start < 0 or stop < 0 or stop > len(self.block) or start >= stop:
-            raise AddressError(f"invalide index {index!r}")
+            stop = self.max_addr + 1
 
-        return self.block[start:stop]
+        if start < self.min_addr or stop > self.max_addr + 1:
+            raise AddressError(f"invalide slice ${start}:${stop:04x}")
+
+        return self.block[start - self.offset : stop - self.offset]
