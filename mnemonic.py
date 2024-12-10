@@ -61,13 +61,13 @@ def ld_A_mem(_, mem):
 def arithmetic_reg8(op, _):
     p = (op >> 3) & 7
     r = op & 7
-    return f"{ARITHMETIC[p]} {REG8[r]}"
+    return f"{ARITHMETIC[p]}{REG8[r]}"
 
 
 def arithmetic_reg8_n(op, mem):
     p = (op >> 3) & 7
     n = mem.next_byte()
-    return f"{ARITHMETIC[p]} ${n:02X}"
+    return f"{ARITHMETIC[p]}${n:02X}"
 
 
 def add_hl(op, _):
