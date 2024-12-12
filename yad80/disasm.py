@@ -12,7 +12,7 @@ def format_line(addr, text, code):
     )
 
 
-def disasm_one(mem):
+def disasm_line(mem):
     addr = mem.addr
     op = mem.next_byte()
     if op is None:
@@ -26,7 +26,7 @@ def disasm_one(mem):
         raise InstructionError(f"{e} at {addr:04x}")
 
 
-def disasm(mem, addr, max_line):
+def disasm_nlines(mem, addr, max_line):
     if not mem.addr_in(addr):
         print(f"start address is out of range {addr:04x}")
         exit()
@@ -71,4 +71,4 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         exit()
     mem = Memory(open(sys.argv[1], "rb").read())
-    disasm(mem)
+    disasm_nlines(mem)

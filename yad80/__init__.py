@@ -1,5 +1,5 @@
 from .memory import Memory
-from .disasm import (disasm, disasm_one)
-from .exceptions import AddressError
+from .disasm import disasm_nlines, disasm_line
+from .exceptions import AddressError, InstructionError
 
-__all__ = ["Memory", "disasm", "disasm_one", "AddressError"]
+__all__ = ["Memory", "disasm_nlines", "disasm_line", "AddressError", "InstructionError"]

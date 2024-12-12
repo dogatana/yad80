@@ -1,6 +1,6 @@
 import argparse
 
-from .disasm import disasm
+from .disasm import disasm_nlines
 from .eager import disasm_eagerly
 from .loader import load
 
@@ -105,4 +105,4 @@ if __name__ == "__main__":
         print(f"mulitple address {args.addr} specified")
         exit()
 
-    disasm(mem, start_addr, args.max_lines)
+    disasm_nlines(mem, start_addr, args.max_lines)

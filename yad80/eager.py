@@ -1,4 +1,4 @@
-from .disasm import disasm_one
+from .disasm import disasm_line
 from collections import defaultdict
 from dataclasses import dataclass
 import re
@@ -125,7 +125,7 @@ def disasm_eagerly(args, mem):
         print(f"; start: {mem.start:04x}")
         while mem.addr < rng.stop:
             try:
-                addr, line = disasm_one(mem)
+                addr, line = disasm_line(mem)
                 if line == "":
                     break
                 lines[addr] = line
@@ -153,7 +153,7 @@ def disasm_eagerly(args, mem):
         mem.start = start
         while True:
             try:
-                addr, line = disasm_one(mem)
+                addr, line = disasm_line(mem)
                 if line == "":
                     break
                 lines[addr] = line
@@ -176,7 +176,7 @@ def disasm_eagerly(args, mem):
 
             mem.addr = start_addr
             while True:
-                addr, line = disasm_one(mem)
+                addr, line = disasm_line(mem)
                 if line == "":
                     break
                 lines[addr] = line
