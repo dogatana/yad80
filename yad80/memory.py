@@ -1,4 +1,4 @@
-from exceptions import AddressError
+from .exceptions import AddressError
 
 
 class Memory:

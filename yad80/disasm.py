@@ -1,8 +1,8 @@
 import re
 
-from exceptions import InstructionError
-from memory import Memory
-from mnemonic import MNEMONIC
+from .exceptions import InstructionError
+from .memory import Memory
+from .mnemonic import MNEMONIC
 
 
 def format_line(addr, text, code):

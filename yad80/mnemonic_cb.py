@@ -1,5 +1,5 @@
-from exceptions import InstructionError
-from mnemonic_defs import BIT_OP, REG8, ROTATE_SHIFT_R
+from .exceptions import InstructionError
+from .mnemonic_defs import BIT_OP, REG8, ROTATE_SHIFT_R
 
 
 def rotate_shift_r(op, _):

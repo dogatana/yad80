@@ -1,6 +1,6 @@
 import os.path
 import struct
-from memory import Memory
+from .memory import Memory
 
 
 def read_file(file):

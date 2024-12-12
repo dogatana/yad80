@@ -1,5 +1,5 @@
-from exceptions import InstructionError
-from mnemonic_defs import (
+from .exceptions import InstructionError
+from .mnemonic_defs import (
     ARITHMETIC,
     BIT_OP,
     REG8,
