@@ -173,7 +173,7 @@ def init_instruction_dict():
         MNEMONIC_DD_FD[0x86 + n * 8] = MNEMONIC_DD_FD[0x86]  # arithmetic
 
     # undocumented LD r,r'
-    for r1 in [0, 1, 2, 3, 7]:
+    for r1 in [0, 1, 2, 3, 4, 5, 7]:
         for r2 in [4, 5]:
             op = 0x40 + (r1 << 3) + r2
             MNEMONIC_DD_FD[op] = ld_reg8_reg8
