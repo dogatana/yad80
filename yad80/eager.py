@@ -5,6 +5,7 @@ import re
 
 debug = False
 
+
 @dataclass
 class Label:
     addr: int
@@ -126,7 +127,44 @@ def merge_ranges(ranges):
             merged = True
             break
 
-def define_db(mem, rng):
+
+def creat_data_ranges(code_ranges, min_addr, max_addr, label_addrs):
+    data_ranges = []
+
+    min_start = min(r.start for r in code_ranges)
+    if min_start < min_addr:
+        data_ranges.append(range(min_addr, min_start - 1))
+    max_stop = max(r.stop for r in code_ranges)
+    if max_stop <= max_addr:
+        data_ranges.append(range(max_stop, max_addr + 1))
+
+    for n, rng in enumerate(code_ranges[:-1]):
+        data_ranges.append(range(rng.stop, code_ranges[n + 1].start))
+
+    if debug:
+        breakpoint()
+
+    ret_ranges = []
+    addr_set = set(label_addrs)
+    for rng in data_ranges:
+        if not addr_set:
+            ret_ranges.append(rng)
+            continue
+        addrs = sorted(a for a in addr_set if a in rng)
+        if not addrs:
+            ret_ranges.append(rng)
+            continue
+        start = rng.start
+        for addr in addrs:
+            ret_ranges.append(range(start, addr))
+            start = addr
+        ret_ranges.append(range(start, rng.stop))
+        addr_set -= set(addrs)
+
+    return ret_ranges
+
+
+def set_db_line(mem, rng):
     lines = {}
     for addr in range(rng.start, rng.stop, 8):
         block = bytearray(mem[addr : min(addr + 8, rng.stop)])
@@ -222,39 +260,13 @@ def disasm_eagerly(args, mem):
                     ranges.append(range(start_addr, mem.addr))
                     break
 
-    if debug:
-        breakpoint()
-        
-    # ranges.sort(key=lambda r: r.start)
-
-    # merged = True
-    # while merged:
-    #     merged = False
-    #     for n in range(len(ranges) - 1):
-    #         if ranges[n].stop < ranges[n + 1].start:
-    #             continue
-    #         start = min(ranges[n].start, ranges[n + 1].start)
-    #         stop = max(ranges[n].stop, ranges[n + 1].stop)
-    #         ranges[n : n + 2] = [range(start, stop)]
-    #         merged = True
-    #         break
     merge_ranges(ranges)
 
-
-    db_ranges = []
-    min_start = ranges[0].start
-    if min_start < mem.min_addr:
-        db_ranges.append(range(mem.min_addr, min_start - 1))
-
-    max_stop = max(r.stop for r in ranges)
-    if max_stop <= mem.max_addr:
-        db_ranges.append(range(max_stop, mem.max_addr + 1))
-
-    for n, rng in enumerate(ranges[:-1]):
-        db_ranges.append(range(rng.stop, ranges[n + 1].start))
-
-    for rng in db_ranges:
-        lines.update(define_db(mem, rng))
+    data_ranges = creat_data_ranges(
+        ranges, mem.min_addr, mem.max_addr, sorted(data_labels.keys())
+    )
+    for rng in data_ranges:
+        lines.update(set_db_line(mem, rng))
 
     for label in branch_labels.values():
         label.check_external(mem)
@@ -280,7 +292,7 @@ def disasm_eagerly(args, mem):
 
     # data or code
     print("")
-    for rng in db_ranges:
+    for rng in data_ranges:
         decoded = bytes2ascii(mem[rng.start : rng.stop])
         print(f"; ${rng.start:04x}-${rng.stop - 1:04x}, [${len(rng):3x}] ", end="")
         print(decoded[:32])
