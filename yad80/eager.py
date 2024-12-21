@@ -3,6 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 import re
 
+debug = False
 
 @dataclass
 class Label:
@@ -123,6 +124,10 @@ def define_db(mem, rng):
 
 
 def disasm_eagerly(args, mem):
+    global debug
+    if args.debug:
+        debug = True
+
     ranges = []
     lines = {}
     branch_labels = defaultdict(dict)
@@ -200,7 +205,9 @@ def disasm_eagerly(args, mem):
                     ranges.append(range(start_addr, mem.addr))
                     break
 
-    breakpoint()
+    if debug:
+        breakpoint()
+        
     ranges.sort(key=lambda r: r.start)
 
     merged = True

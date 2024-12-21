@@ -71,6 +71,9 @@ def parse_args(args):
         "--eager", "-e", action="store_true", help="disasm yeagerly(default false)"
     )
     parser.add_argument(
+        "--debug", action="store_true", default=False, help="debug flag"
+    )
+    parser.add_argument(
         "--max-lines",
         "-m",
         type=int,
