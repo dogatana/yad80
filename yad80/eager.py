@@ -109,6 +109,21 @@ def bytes2_string(bstr):
     return ret
 
 
+def merge_ranges(ranges):
+    ranges.sort(key=lambda r: r.start)
+
+    merged = True
+    while merged:
+        merged = False
+        for n in range(len(ranges) - 1):
+            if ranges[n].stop < ranges[n + 1].start:
+                continue
+            start = min(ranges[n].start, ranges[n + 1].start)
+            stop = max(ranges[n].stop, ranges[n + 1].stop)
+            ranges[n : n + 2] = [range(start, stop)]
+            merged = True
+            break
+
 def define_db(mem, rng):
     lines = {}
     for addr in range(rng.start, rng.stop, 8):
@@ -208,19 +223,21 @@ def disasm_eagerly(args, mem):
     if debug:
         breakpoint()
         
-    ranges.sort(key=lambda r: r.start)
+    # ranges.sort(key=lambda r: r.start)
 
-    merged = True
-    while merged:
-        merged = False
-        for n in range(len(ranges) - 1):
-            if ranges[n].stop < ranges[n + 1].start:
-                continue
-            start = min(ranges[n].start, ranges[n + 1].start)
-            stop = max(ranges[n + 1].stop, ranges[n + 1].stop)
-            ranges[n : n + 2] = [range(start, stop)]
-            merged = True
-            break
+    # merged = True
+    # while merged:
+    #     merged = False
+    #     for n in range(len(ranges) - 1):
+    #         if ranges[n].stop < ranges[n + 1].start:
+    #             continue
+    #         start = min(ranges[n].start, ranges[n + 1].start)
+    #         stop = max(ranges[n].stop, ranges[n + 1].stop)
+    #         ranges[n : n + 2] = [range(start, stop)]
+    #         merged = True
+    #         break
+    merge_ranges(ranges)
+
 
     db_ranges = []
     min_start = ranges[0].start
