@@ -68,13 +68,15 @@ def in_range(ranges, addr):
     return any(addr in r for r in ranges)
 
 
-def replace_branch_addr(labels, lines):
+def replace_branch_addr_ref(labels, lines):
     for target, label in labels.items():
+        if target not in lines:
+            continue
         for addr in label.used_addr:
             lines[addr] = lines[addr].replace(f"${target:04X}", label.name)
 
 
-def replace_string_addr(labels, lines):
+def replace_string_addr_ref(labels, lines):
     addrs = set()
     for label in labels.values():
         if re.match(r"(EX_)?ST_", label.name) is not None:
@@ -88,6 +90,13 @@ def replace_string_addr(labels, lines):
         if str_addr not in addrs:
             continue
         lines[addr] = lines[addr].replace(f"${str_addr:04X}", labels[str_addr].name)
+
+
+def addr_label(addr, branch_labels, data_labels):
+    if addr in branch_labels:
+        return branch_labels[addr].name
+    if addr in data_labels:
+        return data_labels[addr].name
 
 
 def bytes2ascii(bstr):
@@ -168,6 +177,7 @@ def create_db_lines(lines, data_ranges, mem):
     for rng in data_ranges:
         lines.update(set_db_line(mem, rng))
 
+
 def set_db_line(mem, rng):
     lines = {}
     for addr in range(rng.start, rng.stop, 8):
@@ -180,6 +190,14 @@ def set_db_line(mem, rng):
         line += f"   ;[{addr:04x}] " + block.decode("ascii")
         lines[addr] = line
     return lines
+
+
+def define_external_labels(mem, *group):
+    for labels in group:
+        for addr in sorted(labels.keys()):
+            if not mem.addr_in(addr):
+                print(f"{labels[addr].name:16}EQU   ${labels[addr].addr:04x}")
+    print("")
 
 
 def disasm_eagerly(args, mem):
@@ -218,6 +236,7 @@ def disasm_eagerly(args, mem):
         lines[addr] = line
         branch_labels[addr] = Label(addr, "ST", [], True)
 
+    # --addr
     addrs = args.addr
     if not lines and not addrs:
         # no --code, no --addr
@@ -243,6 +262,7 @@ def disasm_eagerly(args, mem):
                 break
         ranges.append(range(start, mem.addr))
 
+    # branch addresses
     while True:
         branches = sorted(a for a, lbl in branch_labels.items() if not lbl.processed)
         if not branches:
@@ -266,30 +286,33 @@ def disasm_eagerly(args, mem):
 
     merge_ranges(ranges)
 
+    # DB
     data_ranges = creat_data_ranges(
         ranges, mem.min_addr, mem.max_addr, sorted(data_labels.keys())
     )
     create_db_lines(lines, data_ranges, mem)
 
-    for label in branch_labels.values():
-        label.check_external(mem)
-    replace_branch_addr(branch_labels, lines)
-    replace_string_addr(branch_labels, lines)
+    # add EX_
+    for labels in [branch_labels, data_labels]:
+        for label in labels.values():
+            label.check_external(mem)
+
+    # add labels
+    replace_branch_addr_ref(branch_labels, lines)
+    replace_string_addr_ref(branch_labels, lines)
+    replace_branch_addr_ref(data_labels, lines)
 
     # external label - EX_ EQU
-    for label in branch_labels.values():
-        if not mem.addr_in(label.addr):
-            print(f"{label.name:16}EQU   ${label.addr:04x}")
-    print("")
+    define_external_labels(mem, branch_labels, data_labels)
 
     addrs = sorted(lines.keys())
     # ORG
     print(" " * 16 + f"ORG   ${addrs[0]:04X}\n")
 
     for addr in addrs:
-        label = branch_labels.get(addr)
-        if label is not None:
-            print(f"\n{label.name}:")
+        label = addr_label(addr, branch_labels, data_labels)
+        if label:
+            print(f"\n{label}:")
         cols = lines[addr].split(";")
         print(" " * 16 + f"{cols[0].strip():40}; {cols[1].strip()}")
 
