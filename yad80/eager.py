@@ -149,6 +149,8 @@ def disasm_eagerly(args, mem):
         addrs = [mem.min_addr]
 
     for start_addr in addrs:
+        if start_addr in lines:
+            continue
         start = mem.min_addr
         mem.start = start
         while True:
@@ -162,8 +164,8 @@ def disasm_eagerly(args, mem):
                 print(e)
                 exit()
             if should_pause(line):
-                ranges.append(range(start, mem.addr))
                 break
+        ranges.append(range(start, mem.addr))
 
     while True:
         branches = sorted(a for a, lbl in labels.items() if not lbl.processed)
