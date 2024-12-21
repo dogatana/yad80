@@ -113,10 +113,12 @@ def merge_ranges(ranges):
     ranges.sort(key=lambda r: r.start)
 
     merged = True
+    ofs = 0
     while merged:
         merged = False
-        for n in range(len(ranges) - 1):
+        for n in range(ofs, len(ranges) - 1):
             if ranges[n].stop < ranges[n + 1].start:
+                ofs += 1
                 continue
             start = min(ranges[n].start, ranges[n + 1].start)
             stop = max(ranges[n].stop, ranges[n + 1].stop)
