@@ -153,7 +153,7 @@ def disasm_eagerly(args, mem):
     # --code
     for rng in args.code:
         ranges.append(rng)
-        mem.start = rng.start
+        mem.addr = rng.start
         print(f"; start: {mem.start:04x}")
         while mem.addr < rng.stop:
             try:
