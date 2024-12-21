@@ -70,26 +70,10 @@ def in_range(ranges, addr):
 
 def replace_branch_addr_ref(labels, lines):
     for target, label in labels.items():
-        if target not in lines:
-            continue
+        # if target not in lines:
+        #     continue
         for addr in label.used_addr:
             lines[addr] = lines[addr].replace(f"${target:04X}", label.name)
-
-
-def replace_string_addr_ref(labels, lines):
-    addrs = set()
-    for label in labels.values():
-        if re.match(r"(EX_)?ST_", label.name) is not None:
-            addrs.add(label.addr)
-
-    for addr, line in lines.items():
-        m = re.search(r"LD\s+\w{2},\$([0-9A-F]{4})", line)
-        if m is None:
-            continue
-        str_addr = int(m.group(1), base=16)
-        if str_addr not in addrs:
-            continue
-        lines[addr] = lines[addr].replace(f"${str_addr:04X}", labels[str_addr].name)
 
 
 def addr_label(addr, branch_labels, data_labels):
@@ -117,6 +101,23 @@ def bytes2_string(bstr):
         else:
             ret += chr(b)
     return ret
+
+
+def scan_str_ref(lines, branch_labels):
+    target_addrs = set(
+        addr for addr, lbl in branch_labels.items() if "ST" in lbl.label_type
+    )
+    for addr, line in lines.items():
+        m = re.search(r"(\(?\$[0-9a-f]{4}\)?)", line, flags=re.IGNORECASE)
+        if m is None:
+            continue
+        if m.group(1)[0] == "$":
+            ref_addr = int(m.group(1)[1:], base=16)
+        else:
+            ref_addr = int(m.group(1)[2:6], base=16)
+        if ref_addr not in target_addrs:
+            continue
+        branch_labels[ref_addr].used_addr.add(addr)
 
 
 def merge_ranges(ranges):
@@ -192,11 +193,17 @@ def set_db_line(mem, rng):
     return lines
 
 
-def define_external_labels(mem, *group):
+def define_equ(mem, line_addrs, *group):
     for labels in group:
         for addr in sorted(labels.keys()):
             if not mem.addr_in(addr):
                 print(f"{labels[addr].name:16}EQU   ${labels[addr].addr:04x}")
+                continue
+            if addr not in line_addrs:
+                print(
+                    f"{labels[addr].name:16}EQU   ${labels[addr].addr:04x} ; within CODE"
+                )
+                continue
     print("")
 
 
@@ -234,7 +241,7 @@ def disasm_eagerly(args, mem):
         text = bytes2_string(mem[addr : rng.stop])
         line = f'DB    "{text}" ;[{addr:04x}] {bytes2ascii(mem[addr:rng.stop])}'
         lines[addr] = line
-        branch_labels[addr] = Label(addr, "ST", [], True)
+        branch_labels[addr] = Label(addr, "ST", set(), True)
 
     # --addr
     addrs = args.addr
@@ -284,6 +291,7 @@ def disasm_eagerly(args, mem):
                     ranges.append(range(start_addr, mem.addr))
                     break
 
+    scan_str_ref(lines, branch_labels)
     merge_ranges(ranges)
 
     # DB
@@ -299,11 +307,10 @@ def disasm_eagerly(args, mem):
 
     # add labels
     replace_branch_addr_ref(branch_labels, lines)
-    replace_string_addr_ref(branch_labels, lines)
     replace_branch_addr_ref(data_labels, lines)
 
-    # external label - EX_ EQU
-    define_external_labels(mem, branch_labels, data_labels)
+    # define external and in-code label with  EQU
+    define_equ(mem, lines.keys(), branch_labels, data_labels)
 
     addrs = sorted(lines.keys())
     # ORG
