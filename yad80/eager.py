@@ -164,6 +164,10 @@ def creat_data_ranges(code_ranges, min_addr, max_addr, label_addrs):
     return ret_ranges
 
 
+def create_db_lines(lines, data_ranges, mem):
+    for rng in data_ranges:
+        lines.update(set_db_line(mem, rng))
+
 def set_db_line(mem, rng):
     lines = {}
     for addr in range(rng.start, rng.stop, 8):
@@ -265,8 +269,7 @@ def disasm_eagerly(args, mem):
     data_ranges = creat_data_ranges(
         ranges, mem.min_addr, mem.max_addr, sorted(data_labels.keys())
     )
-    for rng in data_ranges:
-        lines.update(set_db_line(mem, rng))
+    create_db_lines(lines, data_ranges, mem)
 
     for label in branch_labels.values():
         label.check_external(mem)
