@@ -28,18 +28,27 @@ class Label:
             self.name_cache = "EX_" + self.name_cache
 
 
-def get_branch(labels, addr, line):
+def add_branch_label(labels, addr, line):
     LABEL_TYPE = {"CALL": "CD", "JR": "JR", "JP": "JP", "DJNZ": "JR"}
     m = re.search(
         r"^\s*(JP|JR|DJNZ|CALL)\s+.*?\$([0-9a-f]{4})", line, flags=re.IGNORECASE
     )
     if m is None:
-        return None
+        return
     target = int(m.group(2), base=16)
     label = labels.setdefault(target, Label(target, set(), set(), False))
     label.label_type.add(LABEL_TYPE[m.group(1)])
     label.used_addr.add(addr)
-    return label
+
+
+def add_data_label(labels, addr, line):
+    m = re.search(r"\(\$([0-9a-f]{4})\)", line, flags=re.IGNORECASE)
+    if m is None:
+        return
+    target = int(m.group(1), base=16)
+    label = labels.setdefault(target, Label(target, set(), set(), False))
+    label.label_type.add("DT")
+    label.used_addr.add(addr)
 
 
 STOP = set(["RET", "RETI", "RETN", "HALT"])
@@ -116,7 +125,8 @@ def define_db(mem, rng):
 def disasm_eagerly(args, mem):
     ranges = []
     lines = {}
-    labels = defaultdict(dict)
+    branch_labels = defaultdict(dict)
+    data_labels = defaultdict(dict)
 
     # --code
     for rng in args.code:
@@ -129,7 +139,8 @@ def disasm_eagerly(args, mem):
                 if line == "":
                     break
                 lines[addr] = line
-                get_branch(labels, addr, line)
+                add_branch_label(branch_labels, addr, line)
+                add_data_label(data_labels, addr, line)
             except Exception as e:
                 print(e)
                 # exit()
@@ -141,7 +152,7 @@ def disasm_eagerly(args, mem):
         text = bytes2_string(mem[addr : rng.stop])
         line = f'DB    "{text}" ;[{addr:04x}] {bytes2ascii(mem[addr:rng.stop])}'
         lines[addr] = line
-        labels[addr] = Label(addr, "ST", [], True)
+        branch_labels[addr] = Label(addr, "ST", [], True)
 
     addrs = args.addr
     if not lines and not addrs:
@@ -159,7 +170,8 @@ def disasm_eagerly(args, mem):
                 if line == "":
                     break
                 lines[addr] = line
-                get_branch(labels, addr, line)
+                add_branch_label(branch_labels, addr, line)
+                add_data_label(data_labels, addr, line)
             except Exception as e:
                 print(e)
                 exit()
@@ -168,12 +180,12 @@ def disasm_eagerly(args, mem):
         ranges.append(range(start, mem.addr))
 
     while True:
-        branches = sorted(a for a, lbl in labels.items() if not lbl.processed)
+        branches = sorted(a for a, lbl in branch_labels.items() if not lbl.processed)
         if not branches:
             break
         for start_addr in branches:
             if start_addr in lines or not mem.addr_in(start_addr):
-                labels[start_addr].processed = True
+                branch_labels[start_addr].processed = True
                 continue
 
             mem.addr = start_addr
@@ -182,11 +194,13 @@ def disasm_eagerly(args, mem):
                 if line == "":
                     break
                 lines[addr] = line
-                get_branch(labels, addr, line)
+                add_branch_label(branch_labels, addr, line)
+                add_data_label(data_labels, addr, line)
                 if should_pause(line):
                     ranges.append(range(start_addr, mem.addr))
                     break
 
+    breakpoint()
     ranges.sort(key=lambda r: r.start)
 
     merged = True
@@ -216,13 +230,13 @@ def disasm_eagerly(args, mem):
     for rng in db_ranges:
         lines.update(define_db(mem, rng))
 
-    for label in labels.values():
+    for label in branch_labels.values():
         label.check_external(mem)
-    replace_branch_addr(labels, lines)
-    replace_string_addr(labels, lines)
+    replace_branch_addr(branch_labels, lines)
+    replace_string_addr(branch_labels, lines)
 
     # external label - EX_ EQU
-    for label in labels.values():
+    for label in branch_labels.values():
         if not mem.addr_in(label.addr):
             print(f"{label.name:16}EQU   ${label.addr:04x}")
     print("")
@@ -232,7 +246,7 @@ def disasm_eagerly(args, mem):
     print(" " * 16 + f"ORG   ${addrs[0]:04X}\n")
 
     for addr in addrs:
-        label = labels.get(addr)
+        label = branch_labels.get(addr)
         if label is not None:
             print(f"\n{label.name}:")
         cols = lines[addr].split(";")
