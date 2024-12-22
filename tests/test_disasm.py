@@ -1,6 +1,9 @@
 import subprocess
 from pathlib import Path
 import filecmp
+from src.yad80.cli import main
+from contextlib import redirect_stdout
+import io
 
 ASM = r"C:\Programs\z88dk\bin\z80asm.exe"
 BASE = Path(__file__).parent
@@ -18,14 +21,13 @@ def test_rom():
         unlink_temp()
         target = BASE / file
 
-        result = subprocess.run(
-            f"python -m yad80 -e -c 0-79 -- {target}".split(),
-            text=True,
-            capture_output=True,
-        )
-        assert result.returncode == 0, f"disasm {target}"
+        fp = io.StringIO()
+        with redirect_stdout(fp):
+            main(f"-e -c 0-79 -- {target}".split())
+            Path(TEMP_SRC).write_text(fp.getvalue())
 
-        Path(TEMP_SRC).write_text(result.stdout)
+        assert True
+
         result = subprocess.run([ASM, "-b", TEMP_SRC], stdout=True)
         assert result.returncode == 0, f"asm {TEMP_SRC} of {file}"
 
@@ -38,12 +40,11 @@ def test_MZT():
         unlink_temp()
         target = BASE / file
 
-        result = subprocess.run(
-            f"python -m yad80 -e {target}".split(), text=True, capture_output=True
-        )
-        assert result.returncode == 0, f"diasm {target}"
+        fp = io.StringIO()
+        with redirect_stdout(fp):
+            main(f"-e {target}".split())
+            Path(TEMP_SRC).write_text(fp.getvalue())
 
-        Path(TEMP_SRC).write_text(result.stdout)
         result = subprocess.run([ASM, "-b", TEMP_SRC], stdout=True)
         assert result.returncode == 0, f"asm {TEMP_SRC} of {file}"
 
@@ -58,12 +59,11 @@ def test_asm():
         unlink_temp()
 
         target = BASE / file
-        result = subprocess.run(
-            f"python -m yad80 -m 65536 {target}".split(), text=True, capture_output=True
-        )
-        assert result.returncode == 0, f"disasm {target}"
+        fp = io.StringIO()
+        with redirect_stdout(fp):
+            main(f"-m 65536 {target}".split())
+            Path(TEMP_SRC).write_text(fp.getvalue())
 
-        Path(TEMP_SRC).write_text(result.stdout)
         result = subprocess.run([ASM, "-b", TEMP_SRC], stdout=True)
         assert result.returncode == 0, f"asm {TEMP_SRC} of {file}"
 

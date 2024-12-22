@@ -147,7 +147,7 @@ def main(argv):
 
     if args.eager:
         disasm_eagerly(args, mem)
-        exit()
+        return
 
     if not args.addr:
         start_addr = mem.start
@@ -155,6 +155,6 @@ def main(argv):
         start_addr = args.addr[0]
     else:
         print(f"mulitple address {args.addr} specified")
-        exit()
+        return
 
     disasm_nlines(mem, start_addr, args.max_lines)
