@@ -65,6 +65,7 @@ DEFAULT_MAX_LINES = 32
 
 def build_parser():
     parser = argparse.ArgumentParser(prog="yad80")
+    parser.add_argument("--version", "-v", action="version", version="%(prog)s 1.0")
     parser.add_argument(
         "--option", nargs=1, type=parse_option_file, default=[], help="option file"
     )
