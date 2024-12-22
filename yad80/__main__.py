@@ -1,4 +1,6 @@
 import argparse
+from pathlib import Path
+import re
 
 from .disasm import disasm_nlines
 from .eager import disasm_eagerly
@@ -28,8 +30,44 @@ def parse_range(arg):
     return range(start, stop)
 
 
-def parse_args(args):
+def parse_option_file(file):
+    if not Path(file).exists():
+        raise argparse.ArgumentTypeError(f"'{file}' not found")
+
+    options = []
+    with open(file) as fp:
+        for line in fp:
+            line = re.sub(r"[#;].*$", "", line).strip()
+            if not line:
+                continue
+            cols = line.split()
+            if cols[0] not in {
+                "--eager",
+                "-e",
+                "--code",
+                "-c",
+                "--string",
+                "-s",
+                "--addr",
+                "-a",
+                "--max-lines",
+                "-m",
+                "--ofset",
+                "-o",
+            }:
+                raise argparse.ArgumentTypeError(f"unrecognized option {cols[0]}")
+            options.extend(cols)
+        return options
+
+
+DEFAULT_MAX_LINES = 32
+
+
+def build_parser():
     parser = argparse.ArgumentParser(prog="yad80")
+    parser.add_argument(
+        "--option", nargs=1, type=parse_option_file, default=[], help="option file"
+    )
     parser.add_argument(
         "--code",
         "-c",
@@ -70,7 +108,7 @@ def parse_args(args):
         "--max-lines",
         "-m",
         type=int,
-        default=32,
+        default=DEFAULT_MAX_LINES,
         metavar="N",
         help="max lines for output(default 32)",
     )
@@ -79,7 +117,26 @@ def parse_args(args):
     )
     parser.add_argument("FILE", help="file to disasm")
 
-    return parser.parse_args(args)
+    return parser
+
+
+def parse_args(args):
+    parser = build_parser()
+    parsed = parser.parse_args(args)
+    if not parsed.option:
+        return parsed
+
+    base = parser.parse_args(parsed.option[0] + ["--", parsed.FILE])
+    base.code.extend(parsed.code)
+    base.string.extend(parsed.string)
+    base.addr.extend(parsed.addr)
+    base.eager = base.eager or parsed.eager
+    if parsed.max_lines != DEFAULT_MAX_LINES:
+        base.max_lines = parsed.max_lines
+    if parsed.offset != 0:
+        base.offset = parsed.offset
+
+    return base
 
 
 if __name__ == "__main__":
@@ -87,6 +144,7 @@ if __name__ == "__main__":
 
     args = parse_args(sys.argv[1:])
     print(";", args)
+
     mem = load(args.FILE)
 
     if args.eager:
