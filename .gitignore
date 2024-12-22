@@ -20,6 +20,5 @@ venv/
 *.o
 *.mzt
 
-temp/
 !tests/zilog.asm
 !tests/zilog.bin
