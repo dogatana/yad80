@@ -318,10 +318,15 @@ def disasm_eagerly(args, mem):
 
     for addr in addrs:
         label = addr_label(addr, branch_labels, data_labels)
-        if label:
+        if label is None:
+            print(" " * 16, end="")
+        elif len(label) < 15:
+            label += ":"
+            print(f"\n{label:16}", end="")
+        else:
             print(f"\n{label}:")
         cols = lines[addr].split(";")
-        print(" " * 16 + f"{cols[0].strip():40}; {cols[1].strip()}")
+        print(f"{cols[0].strip():40}; {cols[1].strip()}")
 
     # data or code
     output_information(mem, branch_labels, data_labels, data_ranges)
