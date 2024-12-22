@@ -6,6 +6,8 @@ from .disasm import disasm_nlines
 from .eager import disasm_eagerly
 from .loader import load
 
+DEFAULT_MAX_LINES = 32
+
 
 def parse_addr(arg):
     arg = arg.upper()
@@ -58,9 +60,6 @@ def parse_option_file(file):
                 raise argparse.ArgumentTypeError(f"unrecognized option {cols[0]}")
             options.extend(cols)
         return options
-
-
-DEFAULT_MAX_LINES = 32
 
 
 def build_parser():
