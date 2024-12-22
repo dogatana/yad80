@@ -7,7 +7,7 @@ from .mnemonic import MNEMONIC
 
 def format_line(addr, text, code):
     items = text.split(" ", maxsplit=2)
-    return f"{items[0]:6}{' '.join(items[1:]):40};[{addr:04x}] " + " ".join(
+    return f"{items[0]:8}{' '.join(items[1:]):32};[{addr:04x}] " + " ".join(
         [f"{c:02x}" for c in code]
     )
 
