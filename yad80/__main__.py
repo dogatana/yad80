@@ -31,13 +31,6 @@ def parse_range(arg):
 def parse_args(args):
     parser = argparse.ArgumentParser(prog="yad80")
     parser.add_argument(
-        "--data",
-        "-d",
-        action="store_true",
-        default=False,
-        help="check data reference",
-    )
-    parser.add_argument(
         "--code",
         "-c",
         action="extend",
