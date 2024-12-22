@@ -326,18 +326,26 @@ def disasm_eagerly(args, mem):
     # data or code
     output_information(mem, branch_labels, data_labels, data_ranges)
 
+
 def output_information(mem, branch_labels, data_labels, data_ranges):
+    def print_xref(name, refs):
+        ADDR_PER_LINE = 10
+        for index in range(0, len(refs), ADDR_PER_LINE):
+            print(f"; {name:16}", end="")
+            print(
+                " ".join(
+                    f"${x:04x}"
+                    for x in refs[index : min(index + ADDR_PER_LINE, len(refs))]
+                )
+            )
+            name = ""
+
     print("\n; XREF information")
     for addr in sorted(list(branch_labels.keys() | data_labels.keys())):
-        ref = set()
         if addr in branch_labels:
-            print(";", branch_labels[addr].name)
-            ref |= branch_labels[addr].used_addr
+            print_xref(branch_labels[addr].name, sorted(branch_labels[addr].used_addr))
         if addr in data_labels:
-            print(";", data_labels[addr].name)
-            ref |= data_labels[addr].used_addr
-        ref_lst = sorted(list(ref))
-        print(";   ", " ".join([f"${x:04X}" for x in ref_lst]))
+            print_xref(data_labels[addr].name, sorted(data_labels[addr].used_addr))
 
     print("\n; DATA summary")
     for rng in data_ranges:
