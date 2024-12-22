@@ -22,3 +22,5 @@ venv/
 
 !tests/zilog.asm
 !tests/zilog.bin
+
+src/yad80.egg-info/

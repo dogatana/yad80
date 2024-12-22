@@ -1,5 +1,5 @@
-from .cli import main
+from .cli import cli_main
 import sys
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    cli_main(sys.argv[1:])

@@ -1,0 +1,25 @@
+[project]
+name = "yad80"
+version = "1.0"
+authors = [{ name="dogatana", email="dogatana@gmail.com" }]
+description = "Yet Another Disassembler for Z80"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "twine",
+]
+
+[project.scripts]
+yad80 = "yad80.cli:main"
+
+[project.urls]
+"Homepage" = "https://github.com/dogatana/yad80"
+"Bug Tracker" = "https://github.com/dogatana/yad80/issues"

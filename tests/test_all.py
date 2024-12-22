@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 import filecmp
-from src.yad80.cli import main
+from src.yad80.cli import cli_main
 from contextlib import redirect_stdout
 import io
 
@@ -23,7 +23,7 @@ def test_rom():
 
         fp = io.StringIO()
         with redirect_stdout(fp):
-            main(f"-e -c 0-79 -- {target}".split())
+            cli_main(f"-e -c 0-79 -- {target}".split())
             Path(TEMP_SRC).write_text(fp.getvalue())
 
         assert True
@@ -42,7 +42,7 @@ def test_MZT():
 
         fp = io.StringIO()
         with redirect_stdout(fp):
-            main(f"-e {target}".split())
+            cli_main(f"-e {target}".split())
             Path(TEMP_SRC).write_text(fp.getvalue())
 
         result = subprocess.run([ASM, "-b", TEMP_SRC], stdout=True)
@@ -61,7 +61,7 @@ def test_asm():
         target = BASE / file
         fp = io.StringIO()
         with redirect_stdout(fp):
-            main(f"-m 65536 {target}".split())
+            cli_main(f"-m 65536 {target}".split())
             Path(TEMP_SRC).write_text(fp.getvalue())
 
         result = subprocess.run([ASM, "-b", TEMP_SRC], stdout=True)

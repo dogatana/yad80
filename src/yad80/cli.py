@@ -1,4 +1,5 @@
 import argparse
+import sys
 from pathlib import Path
 import re
 
@@ -139,7 +140,7 @@ def parse_args(args):
     return base
 
 
-def main(argv):
+def cli_main(argv):
     args = parse_args(argv)
     print(";", args)
 
@@ -158,3 +159,7 @@ def main(argv):
         return
 
     disasm_nlines(mem, start_addr, args.max_lines)
+
+
+def main():
+    cli_main(sys.argv[1:])
