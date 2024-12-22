@@ -324,7 +324,22 @@ def disasm_eagerly(args, mem):
         print(" " * 16 + f"{cols[0].strip():40}; {cols[1].strip()}")
 
     # data or code
-    print("")
+    output_information(mem, branch_labels, data_labels, data_ranges)
+
+def output_information(mem, branch_labels, data_labels, data_ranges):
+    print("\n; XREF information")
+    for addr in sorted(list(branch_labels.keys() | data_labels.keys())):
+        ref = set()
+        if addr in branch_labels:
+            print(";", branch_labels[addr].name)
+            ref |= branch_labels[addr].used_addr
+        if addr in data_labels:
+            print(";", data_labels[addr].name)
+            ref |= data_labels[addr].used_addr
+        ref_lst = sorted(list(ref))
+        print(";   ", " ".join([f"${x:04X}" for x in ref_lst]))
+
+    print("\n; DATA summary")
     for rng in data_ranges:
         decoded = bytes2ascii(mem[rng.start : rng.stop])
         print(f"; ${rng.start:04x}-${rng.stop - 1:04x}, [${len(rng):3x}] ", end="")
