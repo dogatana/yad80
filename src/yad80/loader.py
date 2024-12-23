@@ -13,8 +13,12 @@ def load_mzt(file):
     if data[0] != 1:
         print(f"invalid MZT file: {file}, : Attribute is ${data[0]:02X}")
         exit()
-    offset, start = struct.unpack("<2H", data[0x14:0x18])
-    return Memory(data[128:], offset=offset, start=start)
+    size, offset, start = struct.unpack("<3H", data[0x12:0x18])
+    if size + 128 != len(data):
+        print(f"invalid MZT file: {file}, may be multiple data block")
+        exit()
+
+    return Memory(data[128 : size + 128], offset=offset, start=start)
 
 
 def load_bin(file):
