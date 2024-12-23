@@ -2,7 +2,7 @@
 
 ## Introduction
 
-yad80 is a Z80 disassembler that outputs an assembler source.
+yad80 is a Z80 disassembler that outputs an assembler source that can be assembled by z80asm.
 
 ## Install yad80
 
@@ -10,66 +10,78 @@ yad80 is a Z80 disassembler that outputs an assembler source.
 pip install yad80
 ```
 
-## Description
+## Specification
 
-### Disassemblable Z80 Instructions
+### Z80 Instructions
 
-- Instructions defined in Zilog's [Z80 CPU User Manual](https://www.zilog.com/docs/z80/um0080.pdf)<br>[https://github.com/dogatana/yad80/blob/main/tests/zilog.asm](https://github.com/dogatana/yad80/blob/main/tests/zilog.asm)
-- Undocumented Instructions for IXH, IXL, IYH, and IYL in Zilog's Z80 CPU User Manual<br>
-unpublished instructions<>
-<br>[https://github.com/dogatana/yad80/blob/main/tests/undocumented_ixy.asm](https://github.com/dogatana/yad80/blob/main/tests/undocumented_ixy.asm)
+- Instructions defined in Zilog's [Z80 CPU User Manual](https://www.zilog.com/docs/z80/um0080.pdf).  ([zilog.asm](https://github.com/dogatana/yad80/blob/main/tests/zilog.asm))
+- Undocumented Instructions for IXH, IXL, IYH, and IYL. ([undocumented_ixy.asm](https://github.com/dogatana/yad80/blob/main/tests/undocumented_ixy.asm))
 
 ### Input files
 
-- Machine language file with .mzt extension (hereafter __mzt file__)
+- Machine language file with .mzt extension (hereafter __mzt file__).
     - Attribute (file mode) must be $01.
-    - mzt files containing multiple data cannot be handled.
+    - mzt files containing multiple data blocks cannot be handled.
 - Machine language file without address information (hereafter __bin files__).
     - The file extension is arbitrary.
     - If the first address of the file is not $0000, specify it with the `--offset` option.
 
 ### Output of Disassembly Results
 
-- Disassembly results are output to standard output. Redirect to a file if necessary.
-- I have confirmed that the output can be assembled with the z88dk assembler. Other assemblers have not been checked.
+- Result is output to standard output. Redirect it to a file if necessary.
+- I have confirmed that the output can be assembled with z80asm, z88dk assembler.
 
 ### Operation Modes
 
-yad80 has the following two modes of operation, which are selected by runtime options.
+yad80 has the following two modes of operation, which are selected by runtime option(`--eager`).
 
-- simple Disassemble (hereafter __simple__)
+- Simple disassemble (hereafter __Simple__)
     - This is the mode of operation without the `--eager` option.
-    - Disassembles from the specified address until it finds a given number of lines, the end of a file, or an invalid instruction.
+    - Disassembles from the specified start address until it finds a given number of lines, the end of a file, or an invalid instruction.
     - Start address
         - If `--addr` option is specified, the address
-        - If not specified by the `--addr` option, the bin file is the top address of the file, and the mzt file is the execution start address in the header.
-- eager Disassembly (eager)
+        - If not specified by the `--addr` option, the start address of the file for the bin file, or the start address in the mzt file header is used.
+- Eager disassembe (Eager)
     - The mode of operation with `--eager` option.
     - Start address
         - The start address is the same as for simple.
-        - If multiple start addresses are specified in the `--addr` option, all of them are treated as start addresses.
+        - If multiple start addresses are specified with `--addr` option, all of them are treated as start addresses one by one.
         - Disassembles from the specified address to an executable range such as an unconditional branch.
     - Address range specification
-        - An address range can be specified.
+        - An address range can be specified with `--code` option.
         - Disassembles the entire specified address range as a sequence of valid instructions. Disassembly continues even if there is a branch or stop instruction on the way.
     - Disassembles the reachable range
-        - Disassembles the branch address detected during disassembly as the start address. As a result, the entire reachable range from the specified address and address range is disassembled.
+        - Disassembles the branch address detected during disassembly as the start address. As a result, the entire reachable instructions are disassembled.
     - Data
-        - The address range to be handled as data (byte string) can be specified and output in `DB`.
+        - The address range to be handled as data (byte array) can be specified and output in `DB`.
         - Of the address range of the input file, data areas not reached by disassembly are output in `DB`.
     - String
-        The range to be treated as a character string can be specified and is output as a character string, such as `DB "ASCII".`
-        Generates a label for the first address.
+        - The range to be treated as a character string can be specified and is output as a character string, such as `DB "ASCII".`
+        - Generates a label for the first address.
     - Label Generation
         - Generates labels for branch destination addresses.
-        - Generates labels for the string and the first address in the specified address range.
+        - Generates labels for the string and the first address.
         - Generates labels for memory references such as `($ABCD)`.
-        - Does not generate labels for direct values such as `LD HL, $ABCD`, etc.
-        - Adds `EQU` definitions for addresses that are not in the address range of the input file, such as calls to routines in ROM, access to VRAM, memory-mapped IO, etc.
+        - Does __not__ generate labels for immediate values such as `LD HL,$ABCD`, etc.
+        - Adds `EQU` definitions for addresses that are not in the address range of the input file, such as calls to ROM routines, access to VRAM, memory-mapped I/O, etc.
     - Cross Reference
         - Cross reference information for each label is output as a comment following the disassembly output.
     - Data Definition Area Summary
-        - Following the cross reference output, the ASCII output at the beginning of the DB definition contents is output as a commented summary.
+        - Following the cross reference output, data block information is output as a comment.
+
+```
+; XREF information
+; CD_0003         $0092
+; CDJP_0006       $089e $091d $0c51
+; CD_0009         $0089 $0452
+
+; DATA summary
+; $010e-$010e, [$  1] .
+; $0179-$0191, [$ 19] !........... ..(...(..#..
+; $019a-$019e, [$  5] >....
+; $01b4-$01c6, [$ 13] .CHECKSUM ERROR.OK.
+```
+
 
 ### Generated Labels
 
@@ -79,15 +91,17 @@ yad80 has the following two modes of operation, which are selected by runtime op
 - Labels beginning with `EX` are addresses outside the address range of the input file.
 - Output example
 ```
-EX_DT_E000 EQU $e000
+EX_DT_E000      EQU $e000
+
                 ORG $0000
+
                 JP JP_004A
-CD_0003: JP JP_07E6
-CDJP_0006: JP JP_090E
+CD_0003:        JP JP_07E6
+CDJP_0006:      JP JP_090E
 ```
 - In the case of a self-rewriting code, the label is defined as an `EQU` definition, but it is not (and cannot be) output as the first address of the instruction.<br>However, the `; within CODE comment` is added to the EQU definition.
 ```
-DT_460C EQU $460c ; within CODE
+DT_460C         EQU $460c ; within CODE
 
                 LD (DT_460C),A
                 LD A,(IX+$02)
@@ -95,7 +109,7 @@ DT_460C EQU $460c ; within CODE
                 JR Z,JR_460B
                 DEC A
 
-JR_460B: ADD A,$00
+JR_460B:        ADD A,$00
                 CALL CD_45F2
 ```
 
@@ -106,7 +120,7 @@ JR_460B: ADD A,$00
 - `DJNZ`
 - `CALL`
 
-### Instruction to stop disassembling with eager
+### Instruction to stop disassembling
 
 - Unconditional `JP`
 - Unconditional `JR`
@@ -114,8 +128,6 @@ JR_460B: ADD A,$00
 - `HALT`
 
 ## Usage
-
-### Options
 
 ```
 > yad80 -h
@@ -143,14 +155,14 @@ options:
                         address offset for binary file
 ```
 
-### Option explanations
+### Options
 
 - `--eager`
     - Specify eager.
 - `--option OPTION` (simple, eager)
     - Specifies a file containing options.
     - Individual options take precedence over this specification.
-    - In the file, the `;` and  `#` character are start of line comment.
+    - In the file, the `;` and  `#` character are treated as the start of line comment.
 
 ```
 # OPTION example
@@ -158,21 +170,22 @@ options:
 -c 0-79 # JP xxxx 
 
 # string defs
-ST_0131: DB “FOUND ”,$0D                      
-ST_0138: DB “LOADING ”,$0D                    
-ST_0141: DB “** MZ”,$90, “MONITOR VER4.4 **”,$0D
-
-; $0131-$0158, [$ 28] FOUND .LOADING . ** MZ.MONITOR VER4.4 **.
 -s 131-137 ; FOUND
 -s 138-140 ; LOADING
 -s 141-158 ; ** MZ.MONITOR....
+
+; $0131-$0158, [$ 28] FOUND .LOADING . ** MZ.MONITOR VER4.4 **.
+; 
+; ST_0131:        DB    "FOUND ",$0D  
+; ST_0138:        DB    "LOADING ",$0D
+; ST_0141:        DB    "** MZ",$90,"MONITOR VER4.4 **",$0D
 ```
 - `--code RANGE` (eager)
     - Disassemble the entire specified range, regardless of whether it contains instructions to stop disassembly.
 - `--string RANGE` (eager)
     - Define the specified range as a string in `DB`.
 - `--addr ADDR` (simple, eager)
-    - Specify an address to start disassembling.
+    - Specify a starting address to disassembe.
 - `--max-lines N` (simple)
     - Specify the number of lines to disassemble. If not specified, up to 32 lines are disassembled.
 - `--offset OFFSET` (simple, eager)
@@ -187,7 +200,7 @@ __RANGE (address range)__
 - The range is specified in the format `[start address]-[end address]` with no spaces in between.
 - The end address is included in the address range.
 - The start and end addresses are specified as hexadecimal character strings.
-- Example: `0-79` This is $0000-$0079.
+- ex) `0-79` This is $0000-$0079.
 
 __FILE__
 

@@ -161,14 +161,15 @@ options:
 -c 0-79  # JP xxxx 
 
 # string defs
-ST_0131:        DB    "FOUND ",$0D                      
-ST_0138:        DB    "LOADING ",$0D                    
-ST_0141:        DB    "** MZ",$90,"MONITOR VER4.4 **",$0D
-
-; $0131-$0158, [$ 28] FOUND .LOADING .** MZ.MONITOR VER4.4 **.
 -s 131-137 ; FOUND
 -s 138-140 ; LOADING
 -s 141-158 ; ** MZ.MONITOR....
+
+; $0131-$0158, [$ 28] FOUND .LOADING . ** MZ.MONITOR VER4.4 **.
+; 
+; ST_0131:        DB    "FOUND ",$0D  
+; ST_0138:        DB    "LOADING ",$0D
+; ST_0141:        DB    "** MZ",$90,"MONITOR VER4.4 **",$0D
 ```
 - `--code RANGE` (eager)
     - 逆アセンブルを停止する命令を含むかどうかに関わらず、指定範囲全てを逆アセンブルします。
