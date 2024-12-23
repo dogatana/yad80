@@ -101,10 +101,10 @@ JR_460B: ADD A,$00
 
 ### Instruction to be regarded as a branch 
 
-JR_460B: ADD A,$00 CALL CD_45F2
-JR_460B: ADD A
-DJNZ
-CALL
+- `JR`
+- `JR`
+- `DJNZ`
+- `CALL`
 
 ### Instruction to stop disassembling with eager
 
