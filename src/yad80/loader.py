@@ -10,6 +10,9 @@ def read_file(file):
 
 def load_mzt(file):
     data = read_file(file)
+    if data[0] != 1:
+        print(f"invalid MZT file: {file}, : Attribute is ${data[0]:02X}")
+        exit()
     offset, start = struct.unpack("<2H", data[0x14:0x18])
     return Memory(data[128:], offset=offset, start=start)
 
