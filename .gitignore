@@ -22,5 +22,7 @@ venv/
 
 !tests/zilog.asm
 !tests/zilog.bin
+!tests/undocumented_ixy.asm
+!tests/undocumented_ixy.bin
 
 src/yad80.egg-info/
