@@ -12,22 +12,25 @@ pip install yad80
 
 ## 説明
 
+### 逆アセンブル可能な Z80 命令
+
+- Zilog 社の [Z80 CPU User Manual](https://www.zilog.com/docs/z80/um0080.pdf) に定義されている命令<br>[https://github.com/dogatana/yad80/blob/main/tests/zilog.asm](https://github.com/dogatana/yad80/blob/main/tests/zilog.asm)
+- Zilog 未公開命令のうち IXH, IXL, IYH, IYL に関する命令<br>[https://github.com/dogatana/yad80/blob/main/tests/undocumented_ixy.asm](https://github.com/dogatana/yad80/blob/main/tests/undocumented_ixy.asm)
+
 ### 入力ファイル
 
-- 拡張子 `.mzt` を持つファイル（以降 __mzt ファイル__）
+- 拡張子 `.mzt` を持つ機械語ファイル（以降 __mzt ファイル__）
+    - アトリビュート（ファイルモード）が $01 のものが対象です。
+    - 複数のデータをまとめた mzt ファイルは扱えません。
 - アドレス情報を持たない機械語ファイル（以降 __bin ファイル__）。
     - ファイル拡張子は任意です。
     - ファイル先頭のアドレスが $0000 でない場合、`--offset` オプションでそのアドレスを指定します。
 
-### 有効とみなす Z80 命令
-
-- Zilog 社の [Z80 CPU User Manual](https://www.zilog.com/docs/z80/um0080.pdf) に定義されている命令 - [https://github.com/dogatana/yad80/blob/main/tests/zilog.asm](https://github.com/dogatana/yad80/blob/main/tests/zilog.asm)
-- Zilog 未公開命令のうち IXH, IXL, IYH, IYL に関する命令 - [https://github.com/dogatana/yad80/blob/main/tests/undocumented_ixy.asm](https://github.com/dogatana/yad80/blob/main/tests/undocumented_ixy.asm)
 
 ### 逆アセンブル結果の出力
 
 - 逆アセンブルの結果は標準出力へ出力します。必要に応じてファイルへリダイレクトしてください。
-- 出力は z88dk のアセンブラでアセンブル可能となることを確認しています。その他のアセンブラは確認していません。
+- 出力は z88dk のアセンブラでアセンブルできることを確認しています。その他のアセンブラは確認していません。
 
 ### 動作モード
 
@@ -42,7 +45,8 @@ yad80 は次の二つの動作モードを持っており、実行時のオプ�
 - eager 逆アセンブル（以降 __eager__）
     - `--eager` オプションをつけた場合の動作モードです.
     - 開始アドレス
-        - simple と同様の開始アドレスです。ただし `--addr` オプションには複数の開始アドレスを指定可能です。
+        - simple と同様の開始アドレスです。
+        - `--addr` オプションに複数の開始アドレスを指定した場合、その全てを開始アドレスとして処理します。
         - 指定されたアドレスから無条件分岐等、実行可能な範囲まで逆アセンブルします。
     - アドレス範囲指定
         - アドレス範囲を指定可能です。
@@ -59,6 +63,7 @@ yad80 は次の二つの動作モードを持っており、実行時のオプ�
         - 分岐先アドレスに対応するラベルを生成します。
         - 文字列と指定したアドレス範囲の先頭アドレスに対応するラベルを生成します。
         - `($ABCD)` 等、メモリ参照に対するラベルを生成します。
+        - `LD HL,$ABCD` 等、直値に対するラベルは生成しません。
         - ROM 内ルーチンの呼び出し、VRAM、メモリマップトIOへのアクセス等、入力ファイルのアドレス範囲内にないアドレスについて `EQU` 定義を追加します。
     - クロスリファレンス
         - 逆アセンブル出力に続けて、各ラベルのクロスリファレンス情報をコメントとして出力します。
@@ -131,12 +136,12 @@ options:
   --code [RANGE ...], -c [RANGE ...]
                         address range(a1-a2) as code. a2 is an inclusive address
   --string [RANGE ...], -s [RANGE ...]
-                        address range(a1-a2) as code. a2 is an inclusive address
+                        address range(a1-a2) as string. a2 is an inclusive address
   --addr [ADDR ...], -a [ADDR ...]
-                        address(es) to disasm
-  --eager, -e           disasm yeagerly(default false)
-  --debug               debug flag
-  --max-lines N, -m N   max lines for output(default 32)
+                        address to disasm
+  --eager, -e           disasm eagerly(default false)
+  --debug               debug flag(dev use)
+  --max-lines N, -m N   max lines to output(default 32)
   --offset OFFSET, -o OFFSET
                         address offset for binary file
 ```
@@ -155,13 +160,18 @@ options:
 -e       # eager
 -c 0-79  # JP xxxx 
 
-; $0131-$0158, [$ 28] FOUND .LOADING .** MZ.MONITOR VE
+# string defs
+ST_0131:        DB    "FOUND ",$0D                      
+ST_0138:        DB    "LOADING ",$0D                    
+ST_0141:        DB    "** MZ",$90,"MONITOR VER4.4 **",$0D
+
+; $0131-$0158, [$ 28] FOUND .LOADING .** MZ.MONITOR VER4.4 **.
 -s 131-137 ; FOUND
 -s 138-140 ; LOADING
--s 141-158 ; MZ.MONITOR....
+-s 141-158 ; ** MZ.MONITOR....
 ```
 - `--code RANGE` (eager)
-    - 逆アセンブルを停止する命令を検出した場合でも指定範囲を全て逆アセンブルします。
+    - 逆アセンブルを停止する命令を含むかどうかに関わらず、指定範囲全てを逆アセンブルします。
 - `--string RANGE` (eager)
     - 指定範囲を文字列として DB 定義します。
 - `--addr ADDR` (simple, eager)
