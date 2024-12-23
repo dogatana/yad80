@@ -91,16 +91,30 @@ def bytes2ascii(bstr):
     return block.decode("ascii")
 
 
-def bytes2_string(bstr):
+def bytes2string(bstr):
     ret = ""
+    in_str = False
+    if 0x20 <= bstr[0] <= 0x7E:
+        in_str = True
+        ret += '"'
     for b in bstr:
-        if b < 0x20 or b >= 0x7E:
-            ret += f"\\x{b:02x}"
-        elif b == 0x22:
-            ret += r"\""
+        if 0x20 <= b <= 0x7E and in_str:
+            c = chr(b) if b != 0x22 else r"\""
+            ret += c
+        elif 0x20 <= b <= 0x7E:
+            in_str = True
+            ret += '"'
+            c = chr(b) if b != 0x22 else r"\""
+            ret += c
+        elif in_str:
+            in_str = False
+            ret += f'",${b:02X},'
         else:
-            ret += chr(b)
-    return ret
+            ret += f"${b:02X},"
+    if in_str:
+        return ret + '"'
+    else:
+        return ret[:-1]
 
 
 def scan_str_ref(lines, branch_labels):
@@ -238,8 +252,8 @@ def disasm_eagerly(args, mem):
     for rng in args.string:
         ranges.append(rng)
         addr = rng.start
-        text = bytes2_string(mem[addr : rng.stop])
-        line = f'DB    "{text}" ;[{addr:04x}] {bytes2ascii(mem[addr:rng.stop])}'
+        text = bytes2string(mem[addr : rng.stop])
+        line = f'DB    {text} ;[{addr:04x}] {" ".join(f"{b:02X}" for b in mem[addr:rng.stop])}'
         lines[addr] = line
         branch_labels[addr] = Label(addr, "ST", set(), True)
 
