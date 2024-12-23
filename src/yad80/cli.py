@@ -55,7 +55,7 @@ def parse_option_file(file):
                 "-a",
                 "--max-lines",
                 "-m",
-                "--ofset",
+                "--offset",
                 "-o",
             }:
                 raise argparse.ArgumentTypeError(f"unrecognized option {cols[0]}")
@@ -142,7 +142,6 @@ def parse_args(args):
 
 def cli_main(argv):
     args = parse_args(argv)
-    print(";", args)
 
     mem = load(args.FILE)
 
