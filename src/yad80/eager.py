@@ -253,7 +253,7 @@ def disasm_eagerly(args, mem):
         ranges.append(rng)
         addr = rng.start
         text = bytes2string(mem[addr : rng.stop])
-        line = f'DB    {text} ;[{addr:04x}] {" ".join(f"{b:02X}" for b in mem[addr:rng.stop])}'
+        line = f'DB    {text} ;[{addr:04x}] {" ".join(f"{b:02x}" for b in mem[addr:rng.stop])}'
         lines[addr] = line
         branch_labels[addr] = Label(addr, "ST", set(), True)
 
