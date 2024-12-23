@@ -1,5 +1,6 @@
 import os.path
 import struct
+
 from .memory import Memory
 
 

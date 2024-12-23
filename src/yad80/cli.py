@@ -1,7 +1,7 @@
 import argparse
+import re
 import sys
 from pathlib import Path
-import re
 
 from .disasm import disasm_nlines
 from .eager import disasm_eagerly

@@ -1,9 +1,10 @@
-import subprocess
-from pathlib import Path
 import filecmp
-from src.yad80.cli import cli_main
-from contextlib import redirect_stdout
 import io
+import subprocess
+from contextlib import redirect_stdout
+from pathlib import Path
+
+from src.yad80.cli import cli_main
 
 ASM = r"C:\Programs\z88dk\bin\z80asm.exe"
 BASE = Path(__file__).parent

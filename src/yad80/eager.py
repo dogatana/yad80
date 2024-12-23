@@ -1,7 +1,8 @@
-from .disasm import disasm_line
+import re
 from collections import defaultdict
 from dataclasses import dataclass
-import re
+
+from .disasm import disasm_line
 
 debug = False
 
