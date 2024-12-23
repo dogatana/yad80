@@ -370,4 +370,4 @@ def output_information(mem, branch_labels, data_labels, data_ranges):
     for rng in data_ranges:
         decoded = bytes2ascii(mem[rng.start : rng.stop])
         print(f"; ${rng.start:04x}-${rng.stop - 1:04x}, [${len(rng):3x}] ", end="")
-        print(decoded[:32])
+        print(decoded[:48])
