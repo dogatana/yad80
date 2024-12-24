@@ -198,7 +198,7 @@ def set_db_line(mem, rng):
     lines = {}
     for addr in range(rng.start, rng.stop, 8):
         block = bytearray(mem[addr : min(addr + 8, rng.stop)])
-        line = "DB    " + ",".join(f"${b:02X}" for b in block)
+        line = "DB      " + ",".join(f"${b:02X}" for b in block)
         line += "    " * (8 - len(block))
         for n, b in enumerate(block):
             if b < 0x20 or b >= 0x7E:
@@ -329,7 +329,7 @@ def disasm_eagerly(args, mem):
 
     addrs = sorted(lines.keys())
     # ORG
-    print(" " * 16 + f"ORG   ${addrs[0]:04X}\n")
+    print(" " * 16 + f"ORG     ${addrs[0]:04X}\n")
 
     for addr in addrs:
         label = addr_label(addr, branch_labels, data_labels)

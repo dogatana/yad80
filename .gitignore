@@ -26,3 +26,4 @@ venv/
 !tests/undocumented_ixy.bin
 
 src/yad80.egg-info/
+dist/
