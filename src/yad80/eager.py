@@ -212,11 +212,11 @@ def define_equ(mem, line_addrs, *group):
     for labels in group:
         for addr in sorted(labels.keys()):
             if not mem.addr_in(addr):
-                print(f"{labels[addr].name:16}EQU   ${labels[addr].addr:04x}")
+                print(f"{labels[addr].name:16}EQU     ${labels[addr].addr:04x}")
                 continue
             if addr not in line_addrs:
                 print(
-                    f"{labels[addr].name:16}EQU   ${labels[addr].addr:04x} ; within CODE"
+                    f"{labels[addr].name:16}EQU     ${labels[addr].addr:04x} ; within CODE"
                 )
                 continue
     print("")
