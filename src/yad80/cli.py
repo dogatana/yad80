@@ -65,7 +65,7 @@ def parse_option_file(file):
 
 def build_parser():
     parser = argparse.ArgumentParser(prog="yad80")
-    parser.add_argument("--version", "-v", action="version", version="%(prog)s 0.1.1")
+    parser.add_argument("--version", "-v", action="version", version="%(prog)s 0.1.2")
     parser.add_argument(
         "--option", nargs=1, type=parse_option_file, default=[], help="option file"
     )
