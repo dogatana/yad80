@@ -267,8 +267,7 @@ def disasm_eagerly(args, mem):
     for start_addr in addrs:
         if start_addr in lines:
             continue
-        start = mem.min_addr
-        mem.start = start
+        mem.addr = start_addr
         while True:
             try:
                 addr, line = disasm_line(mem)
@@ -282,7 +281,7 @@ def disasm_eagerly(args, mem):
                 exit()
             if should_pause(line):
                 break
-        ranges.append(range(start, mem.addr))
+        ranges.append(range(start_addr, mem.addr))
 
     # branch addresses
     while True:
