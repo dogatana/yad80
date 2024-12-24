@@ -114,7 +114,7 @@ def build_parser():
         help=f"max lines to output(default {DEFAULT_MAX_LINES})",
     )
     parser.add_argument(
-        "--offset", "-o", type=int, default=0, help="address offset for binary file"
+        "--offset", "-o", type=parse_addr, default=0, help="address offset for binary file"
     )
     parser.add_argument("FILE", help="file to disasm")
 
@@ -143,7 +143,7 @@ def parse_args(args):
 def cli_main(argv):
     args = parse_args(argv)
 
-    mem = load(args.FILE)
+    mem = load(args.FILE, args.offset)
 
     if args.eager:
         disasm_eagerly(args, mem)
