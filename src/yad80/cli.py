@@ -63,6 +63,12 @@ def parse_option_file(file):
         return options
 
 
+def check_file(file):
+    if not Path(file).exists():
+        raise argparse.ArgumentTypeError(f"{file} not found")
+    return file
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="yad80")
     parser.add_argument("--version", "-v", action="version", version="%(prog)s 0.1.5")
@@ -114,9 +120,13 @@ def build_parser():
         help=f"max lines to output(default {DEFAULT_MAX_LINES})",
     )
     parser.add_argument(
-        "--offset", "-o", type=parse_addr, default=0, help="address offset for binary file"
+        "--offset",
+        "-o",
+        type=parse_addr,
+        default=0,
+        help="address offset for binary file",
     )
-    parser.add_argument("FILE", help="file to disasm")
+    parser.add_argument("FILE", type=check_file, help="file to disasm")
 
     return parser
 
