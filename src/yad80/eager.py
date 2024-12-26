@@ -153,11 +153,11 @@ def merge_ranges(ranges):
             break
 
 
-def creat_data_ranges(code_ranges, min_addr, max_addr, label_addrs):
+def create_data_ranges(code_ranges, min_addr, max_addr, label_addrs):
     data_ranges = []
 
     min_start = min(r.start for r in code_ranges)
-    if min_start < min_addr:
+    if min_addr < min_start:
         data_ranges.append(range(min_addr, min_start - 1))
     max_stop = max(r.stop for r in code_ranges)
     if max_stop <= max_addr:
@@ -309,7 +309,7 @@ def disasm_eagerly(args, mem):
     merge_ranges(ranges)
 
     # DB
-    data_ranges = creat_data_ranges(
+    data_ranges = create_data_ranges(
         ranges, mem.min_addr, mem.max_addr, sorted(data_labels.keys())
     )
     create_db_lines(lines, data_ranges, mem)
