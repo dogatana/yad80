@@ -199,6 +199,7 @@ __FILE__
 
 ## 更新履歴
 
+- v0.1.5 Bug fix: 格納開始アドレスと実行開始アドレスが異なる場合、DB が作成されない不具合を修正
 - v0.1.4 Bug fix: `--addr` option
 - v0.1.3 `EQU` の後に空白挿入
 - v0.1.2 Bug fix: `--offset` option

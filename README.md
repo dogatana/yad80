@@ -208,6 +208,7 @@ __FILE__
 
 ## ChangeLog
 
+- v0.1.5 Bug fix: Dose not create DB when minimum address < start address
 - v0.1.4 Bug fix: `--addr` option
 - v0.1.3 Insert some spaces after EQU
 - v0.1.2 Bug fix: `--offset` option
