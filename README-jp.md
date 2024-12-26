@@ -197,5 +197,11 @@ __FILE__
 - 複数の値を指定可能なオプションと FILE の前には `--`（オプション指定終了）を入れてください。
 
 
+## 更新履歴
+
+- v0.1.4 Bug fix: `--addr` option
+- v0.1.3 `EQU` の後に空白挿入
+- v0.1.2 Bug fix: `--offset` option
+- v0.1.0 公開
 
 End of Document

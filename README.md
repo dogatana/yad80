@@ -206,4 +206,11 @@ __FILE__
 
 - Multiple-valued options and `FILE` must be preceded by `--` (end of option).
 
+## ChangeLog
+
+- v0.1.4 Bug fix: `--addr` option
+- v0.1.3 Insert some spaces after EQU
+- v0.1.2 Bug fix: `--offset` option
+- v0.1.0 public release
+
 End of document
