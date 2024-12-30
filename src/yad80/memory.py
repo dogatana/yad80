@@ -4,11 +4,14 @@ from .exceptions import AddressError
 class Memory:
     def __init__(self, block, start=0, offset=0):
         self.block = block
-        self.start = start
         self.offset = offset
         self.current = 0
         self.min_addr = offset
         self.max_addr = offset + len(block) - 1
+        if start != 0:
+            self.start = start
+        else:
+            self.start = self.min_addr
 
     def next_byte(self):
         if self.current < len(self.block):
