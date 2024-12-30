@@ -20,6 +20,13 @@ class Memory:
     def rewind(self):
         self.current = 0
 
+    def __repr__(self):
+        return (
+            f"offset:{self.offset:x}, start: {self.start:04x}, "
+            f"addr:{self.min_addr:04x}-{self.max_addr:04x}, "
+            f"size:{len(self):04x}"
+        )
+
     @property
     def addr(self):
         return self.current + self.offset
