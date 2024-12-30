@@ -34,7 +34,7 @@ class Memory:
     @addr.setter
     def addr(self, value):
         if value < self.min_addr or value > self.max_addr:
-            raise AddressError(f"invalide addr {value:04x}")
+            raise AddressError(f"invalid addr {value:04x}")
         self.current = value - self.offset
 
     def __len__(self):
@@ -50,7 +50,7 @@ class Memory:
             return self.block[index - self.offset]
 
         if not isinstance(index, slice):
-            raise AddressError(f"invalide index {index!r}")
+            raise AddressError(f"invalid index {index!r}")
 
         start, stop = index.start, index.stop
         if start is None:
@@ -60,6 +60,6 @@ class Memory:
             stop = self.max_addr + 1
 
         if start < self.min_addr or stop > self.max_addr + 1:
-            raise AddressError(f"invalide slice ${start}:${stop:04x}")
+            raise AddressError(f"invalid slice ${start}:${stop:04x}")
 
         return self.block[start - self.offset : stop - self.offset]
