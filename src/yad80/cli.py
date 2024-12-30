@@ -1,6 +1,7 @@
 import argparse
 import re
 import sys
+import traceback
 from pathlib import Path
 
 from .disasm import disasm_nlines
@@ -156,7 +157,13 @@ def cli_main(argv):
     mem = load(args.FILE, args.offset)
 
     if args.eager:
-        disasm_eagerly(args, mem)
+        try:
+            disasm_eagerly(args, mem)
+        except Exception as e:
+            if args.debug:
+                traceback.print_exception(e)
+            else:
+                print(f"Exception {e}")
         return
 
     if not args.addr:
