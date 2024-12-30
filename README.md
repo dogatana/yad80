@@ -208,6 +208,7 @@ __FILE__
 
 ## ChangeLog
 
+- v0.1.6 Bug fix: Offset information is not used for start addres of a bin file
 - v0.1.5 Bug fix: Dose not create DB when minimum address < start address
 - v0.1.4 Bug fix: `--addr` option
 - v0.1.3 Insert some spaces after EQU
