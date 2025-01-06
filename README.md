@@ -88,6 +88,8 @@ yad80 has the following two modes of operation, which are selected by runtime op
 - `JR`, `JP`, and `CD` correspond to relative jumps, absolute jumps, and calls, respectively. If there are multiple branches for the same address, labels are generated that include all of them.
 - `ST` corresponds to a string.
 - `DT` corresponds to a memory reference.
+- `CO` corresponds to a memory reference of --code.
+- `AO` corresponds to a memory reference of --addr.
 - Labels beginning with `EX` are addresses outside the address range of the input file.
 - Output example
 ```
@@ -208,6 +210,7 @@ __FILE__
 
 ## ChangeLog
 
+- v0.2.0 generate AO labels for --addr and CO labels for --code
 - v0.1.6 Bug fix: Offset information is not used for start addres of a bin file
 - v0.1.5 Bug fix: Dose not create DB when minimum address < start address
 - v0.1.4 Bug fix: `--addr` option
