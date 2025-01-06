@@ -138,11 +138,16 @@ def parse_args(args):
     if not parsed.option:
         return parsed
 
+    for arg in dir(parsed):
+        if arg in ["option", "FILE"]:
+            continue
+
     base = parser.parse_args(parsed.option[0] + ["--", parsed.FILE])
     base.code.extend(parsed.code)
     base.string.extend(parsed.string)
     base.addr.extend(parsed.addr)
     base.eager = base.eager or parsed.eager
+    base.debug = base.debug or parsed.debug
     if parsed.max_lines != DEFAULT_MAX_LINES:
         base.max_lines = parsed.max_lines
     if parsed.offset != 0:
@@ -153,7 +158,8 @@ def parse_args(args):
 
 def cli_main(argv):
     args = parse_args(argv)
-
+    if args.debug:
+        print(args)
     mem = load(args.FILE, args.offset)
 
     if args.eager:
