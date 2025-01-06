@@ -167,9 +167,6 @@ def create_data_ranges(code_ranges, min_addr, max_addr, label_addrs):
     for n, rng in enumerate(code_ranges[:-1]):
         data_ranges.append(range(rng.stop, code_ranges[n + 1].start))
 
-    if debug:
-        breakpoint()
-
     ret_ranges = []
     addr_set = set(label_addrs)
     for rng in data_ranges:
@@ -237,6 +234,7 @@ def disasm_eagerly(args, mem):
     for rng in args.code:
         ranges.append(rng)
         mem.addr = rng.start
+        branch_labels[rng.start] = Label(rng.start, set(["CO"]), set(), True)
         print(f"; start: {mem.start:04x}")
         while mem.addr < rng.stop:
             try:
@@ -269,6 +267,8 @@ def disasm_eagerly(args, mem):
         addrs = [mem.start]
 
     for start_addr in addrs:
+        if start_addr not in branch_labels:
+            branch_labels[start_addr] = Label(start_addr, set(["AO"]), set(), True)
         if start_addr in lines:
             continue
         mem.addr = start_addr
@@ -283,7 +283,6 @@ def disasm_eagerly(args, mem):
             except Exception as e:
                 if debug_mode:
                     traceback.print_exception(e)
-                    breakpoint()
                 else:
                     print(e)
                 exit()
