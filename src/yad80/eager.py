@@ -1,10 +1,11 @@
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+import traceback
 
 from .disasm import disasm_line
 
-debug = False
+debug_mode = False
 
 
 @dataclass
@@ -223,9 +224,9 @@ def define_equ(mem, line_addrs, *group):
 
 
 def disasm_eagerly(args, mem):
-    global debug
+    global debug_mode
     if args.debug:
-        debug = True
+        debug_mode = True
 
     ranges = []
     lines = {}
@@ -246,8 +247,11 @@ def disasm_eagerly(args, mem):
                 add_branch_label(branch_labels, addr, line)
                 add_data_label(data_labels, addr, line)
             except Exception as e:
-                print(e)
-                # exit()
+                if debug_mode:
+                    traceback.print_exception(e)
+                else:
+                    print(e)
+                exit()
 
     # --string
     for rng in args.string:
@@ -277,7 +281,11 @@ def disasm_eagerly(args, mem):
                 add_branch_label(branch_labels, addr, line)
                 add_data_label(data_labels, addr, line)
             except Exception as e:
-                print(e)
+                if debug_mode:
+                    traceback.print_exception(e)
+                    breakpoint()
+                else:
+                    print(e)
                 exit()
             if should_pause(line):
                 break
