@@ -74,7 +74,27 @@ def build_parser():
     parser = argparse.ArgumentParser(prog="yad80")
     parser.add_argument("--version", "-v", action="version", version="%(prog)s 0.2.0")
     parser.add_argument(
+        "--eager", "-e", action="store_true", help="disasm eagerly(default false)"
+    )
+    parser.add_argument(
         "--option", nargs=1, type=parse_option_file, default=[], help="option file"
+    )
+    parser.add_argument(
+        "--offset",
+        "-o",
+        type=parse_addr,
+        default=0,
+        help="address offset for binary file",
+    )
+    parser.add_argument(
+        "--addr",
+        "-a",
+        action="extend",
+        nargs="*",
+        type=parse_addr,
+        default=[],
+        metavar="ADDR",
+        help="address to disasm",
     )
     parser.add_argument(
         "--code",
@@ -97,22 +117,6 @@ def build_parser():
         help="address range(a1-a2) as string. a2 is an inclusive address",
     )
     parser.add_argument(
-        "--addr",
-        "-a",
-        action="extend",
-        nargs="*",
-        type=parse_addr,
-        default=[],
-        metavar="ADDR",
-        help="address to disasm",
-    )
-    parser.add_argument(
-        "--eager", "-e", action="store_true", help="disasm eagerly(default false)"
-    )
-    parser.add_argument(
-        "--debug", action="store_true", default=False, help="debug flag(dev use)"
-    )
-    parser.add_argument(
         "--max-lines",
         "-m",
         type=int,
@@ -120,14 +124,10 @@ def build_parser():
         metavar="N",
         help=f"max lines to output(default {DEFAULT_MAX_LINES})",
     )
-    parser.add_argument(
-        "--offset",
-        "-o",
-        type=parse_addr,
-        default=0,
-        help="address offset for binary file",
-    )
     parser.add_argument("FILE", type=check_file, help="file to disasm")
+    parser.add_argument(
+        "--debug", action="store_true", default=False, help="debug flag(dev use)"
+    )
 
     return parser
 
