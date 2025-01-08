@@ -159,7 +159,7 @@ def create_data_ranges(code_ranges, min_addr, max_addr, label_addrs):
 
     min_start = min(r.start for r in code_ranges)
     if min_addr < min_start:
-        data_ranges.append(range(min_addr, min_start - 1))
+        data_ranges.append(range(min_addr, min_start))
     max_stop = max(r.stop for r in code_ranges)
     if max_stop <= max_addr:
         data_ranges.append(range(max_stop, max_addr + 1))
@@ -314,6 +314,9 @@ def disasm_eagerly(args, mem):
 
     scan_str_ref(lines, branch_labels)
     merge_ranges(ranges)
+
+    if debug_mode:
+        breakpoint()
 
     # DB
     data_ranges = create_data_ranges(
