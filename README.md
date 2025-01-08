@@ -210,6 +210,7 @@ __FILE__
 
 ## ChangeLog
 
+- v0.2.1 Bug fix: One byte missing when generating DB from the beginning to the start address.
 - v0.2.0 generate AO labels for --addr and CO labels for --code
 - v0.1.6 Bug fix: Offset information is not used for start addres of a bin file
 - v0.1.5 Bug fix: Dose not create DB when minimum address < start address

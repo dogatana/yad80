@@ -1,6 +1,6 @@
 [project]
 name = "yad80"
-version = "0.2.0"
+version = "0.2.1"
 authors = [{ name="dogatana", email="dogatana@gmail.com" }]
 description = "Yet Another Disassembler for Z80"
 readme = "README.md"
