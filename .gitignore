@@ -19,6 +19,7 @@ venv/
 *.rom
 *.o
 *.mzt
+*.cfg
 
 !tests/zilog.asm
 !tests/zilog.bin
