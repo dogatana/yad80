@@ -19,6 +19,7 @@ def unlink_temp():
 
 def test_rom():
     for file in BASE.glob("*.rom"):
+        print("# use", file)
         unlink_temp()
         target = BASE / file
 
@@ -38,6 +39,7 @@ def test_rom():
 
 def test_MZT():
     for file in BASE.glob("*.mzt"):
+        print("# use", file)
         unlink_temp()
         target = BASE / file
 
@@ -57,6 +59,7 @@ def test_MZT():
 
 def test_asm():
     for file in BASE.glob("*.bin"):
+        print("# use", file)
         unlink_temp()
 
         target = BASE / file
