@@ -53,7 +53,6 @@ yad80 has the following two modes of operation, which are selected by runtime op
     - Disassembles the reachable range
         - Disassembles the branch address detected during disassembly as the start address. As a result, the entire reachable instructions are disassembled.
     - Data
-        - The address range to be handled as data (byte array) can be specified and output in `DB`.
         - Of the address range of the input file, data areas not reached by disassembly are output in `DB`.
     - String
         - The range to be treated as a character string can be specified and is output as a character string, such as `DB "ASCII".`
